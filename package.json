@@ -5,7 +5,7 @@
   "author": "Cornelius M.",
   "repository": {
     "type": "git",
-    "url": "https://jdialogc@bitbucket.org/worldprojects/angular-steward-client.git"
+    "url": "https://github.com/cornelius-muhatia/steward-client-wrapper.git"
   },
   "scripts": {
     "ng": "ng",
