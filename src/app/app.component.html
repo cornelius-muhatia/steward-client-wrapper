@@ -1,0 +1,14 @@
+<h4>Other Tables</h4>
+<router-outlet></router-outlet>
+<hr />
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <tgr-material-table [showDefaultFilters] = "false" [endpoint] = "'/role'" [columns] = "matColumns" (actionsEvent) = "onActionsEvent($event)" [filterComponents] = "filterControls" ([selection]) = "selection"></tgr-material-table>
+        </div>
+    </div>
+    <div class="row">
+        <button class="btn btn-primary" (click) = "approveRecords($event)">Approve Actions</button>
+    </div>
+</div>
+<hr />

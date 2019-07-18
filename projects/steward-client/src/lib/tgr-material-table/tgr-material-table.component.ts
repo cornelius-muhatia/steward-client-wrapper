@@ -1,0 +1,438 @@
+import { Component, OnInit, EventEmitter, Input, Output, ViewChild, AfterViewInit } from '@angular/core';
+import { NgForm, FormGroup, FormControl, Validators } from '@angular/forms';
+import { Page } from '../entities/wrappers/page';
+import { MlkDynamicControl, MlkInput, MlkTextarea, MlkSelect } from '../entities/wrappers/mlk-dynamic-control';
+import { ResponseWrapper } from '../entities/wrappers/response-wrapper';
+import { StewardClientService } from '../steward-client.service';
+import { DatatableComponent } from '@swimlane/ngx-datatable';
+import { Queue } from 'queue-typescript';
+import { SelectionModel } from '@angular/cdk/collections';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
+import { NativeDateAdapter, PageEvent, MatSort, Sort } from "@angular/material";
+import { TgrDynamicControl, TgrInput, TgrSelect, TgrTextarea } from '../entities/tgr-dynamic-control';
+import { DatePipe } from '@angular/common';
+
+/**
+ * Format angular date to dd-mm-yyyy
+ */
+export class AppDateAdapter extends NativeDateAdapter {
+
+  /**
+   * Parse date to dd-mm-yyyy
+   * @param date  date input
+   * @param displayFormat expects to be input string
+   */
+  format(date: Date, displayFormat: Object): string {
+
+    if (displayFormat === 'input') {
+
+      var day = date.getDate();
+      var month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      let dayString: string;
+      let monthString: string;
+
+      if (day < 10) {
+        dayString = '0' + day;
+      } else {
+        dayString = '' + day;
+      }
+
+      if (month < 10) {
+        monthString = '0' + month;
+      } else {
+        monthString = '' + month;
+      }
+
+      return `${year}-${monthString}-${dayString}`;
+    }
+
+    return date.toDateString();
+  }
+}
+/**
+ * Material date formats
+ */
+export const APP_DATE_FORMATS =
+{
+  parse: {
+    dateInput: { month: 'numeric', year: 'numeric', day: 'numeric' },
+  },
+  display: {
+    dateInput: 'input',
+    monthYearLabel: { year: 'numeric', month: 'numeric' },
+    dateA11yLabel: { year: 'numeric', month: 'numeric', day: 'numeric' },
+    monthYearA11yLabel: { year: 'numeric', month: 'long' },
+  }
+};
+
+
+@Component({
+  selector: 'tgr-material-table',
+  templateUrl: './tgr-material-table.component.html',
+  styleUrls: ['./tgr-material-table.component.css'],
+  providers: [
+    { provide: DateAdapter, useClass: AppDateAdapter },
+    {
+      provide: MAT_DATE_FORMATS, useValue: APP_DATE_FORMATS
+    }
+  ]
+})
+export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
+
+  displayedColumns: string[] = ["checkbox"];
+  @Output() selection: SelectionModel<any> = new SelectionModel<any>(true, []);
+  @Output() rowSelection = new EventEmitter<SelectionModel<any>>();
+  @ViewChild(MatSort) sort: MatSort;
+
+
+  @Input() columns: Array<TgrMatTableColumn> = [];
+  @Input() enableCheckbox: boolean = true;
+  @Input() endpoint: string;
+  @Input() moreActions: TgrMoreActions;
+  @Output() actionsEvent = new EventEmitter<TgrMoreActionData>()
+  @Input() filterComponents: Array<TgrDynamicControl<any>> = [];
+  @Input() params: Map<string, any>;
+  @Input() showDefaultFilters: boolean = true;
+  page: Page<any>;
+  selected = [];
+  @ViewChild(DatatableComponent) table: DatatableComponent;
+  filter: Object = {};
+  filterForm: FormGroup;
+  private sortParams: Sort;
+  /**
+   * Checks if server request has been processed
+   */
+  isLoadingResults = false;
+  /**
+   * Date pipe
+   */
+  private datePipe: DatePipe
+
+  constructor(private sterwardService: StewardClientService<ResponseWrapper<Page<any>>, any>) {
+    this.page = new Page();
+    this.page.content = [];
+    this.datePipe = new DatePipe("en-US");
+  }
+
+  /**
+   * Generate form control from filterComponents and also appending default controls ie. date filter and search controls
+   */
+  ngOnInit() {
+    //intializing table columns
+    this.columns.forEach(c => {
+      this.displayedColumns.push(c.fieldName);
+    });
+    if (this.moreActions) {
+      this.displayedColumns.push("actions");
+    } else {
+      console.debug("moreActions not injected skipping rendering 'More Actions' column");
+    }
+    let group = {};
+    this.filterComponents.forEach(comp => {
+      let validators: Array<any> = [];
+      if (comp.isRequired) {
+        validators.push(Validators.required);
+      }
+
+      if (comp.controlType instanceof TgrInput || comp.controlType instanceof TgrTextarea) {
+        validators.push(Validators.minLength(comp.controlType.minLength));
+        validators.push(Validators.maxLength(comp.controlType.maxLength));
+      }
+
+      if (comp.controlType instanceof TgrInput) {
+        validators.push(Validators.max(comp.controlType.max));
+        validators.push(Validators.min(comp.controlType.min));
+      }
+      group[comp.name] = new FormControl('', validators)
+    });
+    //add default controls
+    group['from'] = new FormControl('', Validators.maxLength(100));
+    group['to'] = new FormControl('', Validators.maxLength(100));
+    group['needle'] = new FormControl('', Validators.maxLength(200));
+    this.filterForm = new FormGroup(group);
+    this.loadPage({ offset: 0, limit: this.page.size }, null);
+  }
+
+  /**
+   * After view intialization fire selection event
+   */
+  ngAfterViewInit(): void {
+    this.rowSelection.emit(this.selection);
+  }
+
+  /** Whether the number of selected elements matches the total number of rows. */
+  isAllSelected() {
+    const numSelected = this.selection.selected.length;
+    const numRows = this.page.content.length;
+    return numSelected == numRows;
+  }
+
+  /** Selects all rows if they are not all selected; otherwise clear selection. */
+  masterToggle() {
+    this.isAllSelected() ?
+      this.selection.clear() :
+      this.page.content.forEach(row => this.selection.select(row));
+  }
+
+  /**
+   * Used to emit click event of the actions
+   * @param event
+   */
+  onActionClick(event: TgrMoreActionData) {
+    this.actionsEvent.emit(event);
+  }
+
+  /**
+   * Process server request of datable
+   * @param pageInfo
+   * @param filters
+   */
+  loadPage(pageInfo, filters) {
+    if (!this.endpoint) {
+      return;
+    }
+    this.isLoadingResults = true;
+    let request: Map<string, any>;
+    if (filters) {
+      request = filters;
+    } else {
+      request = new Map();
+    }
+    if (this.params) {
+      this.params.forEach((value, key) => {
+        if (key != null && key != undefined) { //ignore null values
+          request.set(key, value);
+        }
+      });
+    }
+    request.set("page", pageInfo.offset);
+    request.set("size", pageInfo.limit);
+    this.sterwardService.get(this.endpoint, request).subscribe(response => {
+      if (response.status == 200) {
+        this.page = response.data;
+      }
+      this.isLoadingResults = false;
+    },
+      error => {
+        console.debug("Server request has failed");
+        this.isLoadingResults = false;
+      });
+
+  }
+
+  /**
+   * Used tolisten to pagination events/actions
+   * @param page 
+   */
+  pageEvent(page: PageEvent) {
+    this.loadPage({ limit: page.pageSize, offset: page.pageIndex }, this.getFilters());
+  }
+
+
+  /**
+   * Used to processing table sorting
+   * @param event 
+   */
+  processSorting(event: Sort) {
+    this.sortParams = event;
+    this.loadPage({ limit: this.page.size, offset: 0 }, this.getFilters());
+  }
+
+  /**
+   * Used to get filter entries from the filter form. Also adds sort parameters to request
+   */
+  private getFilters() {
+    //@ts-ignore
+    // let f: Map<String, any> = new Map(Object.entries(this.filterForm.value));
+    let f: Map<String, any> = new Map();
+    Object.keys(this.filterForm.value).forEach((val, key) => {
+      // console.debug("Key is " + key + " and value " + val);
+      if(this.filterForm.value[val]){
+        if(val == 'from' || val == "to"){
+          f.set(val, this.datePipe.transform(this.filterForm.value[val], 'yyyy-MM-dd'));
+        }else{
+          f.set(val, this.filterForm.value[val]);
+        }
+      }
+    })
+    //add sorting parameters
+    if (this.sortParams) {
+      f.set("sort", this.sortParams.active + "," + this.sortParams.direction);
+    }
+    return f;
+  }
+  /**
+   * Used to process table filter. If date filter is not provide the from value is 
+   * set to 2018-01-01 and to value is set to 1 year from today
+   * @param form 
+   * @deprecated
+   */
+  processFilter(form) {
+    //@ts-ignore
+    this.loadPage({ offset: this.page.number, limit: this.page.size }, this.getFilters());
+  }
+
+  /**
+   * Used to check if miliki control is input
+   * @param control
+   */
+  isInput(control: any) {
+    return control instanceof TgrInput;
+  }
+
+  /**
+   * Used to check if miliki control is select
+   * @param control
+   */
+  isSelect(control: any) {
+    return control instanceof TgrSelect;
+  }
+
+  /**
+   * Used to check if miliki control is textarea
+   */
+  isTextArea(control: any) {
+    return control instanceof TgrTextarea;
+  }
+
+  /**
+   * Used to format date to string yyyy-MM-dd
+   * @param date
+   */
+  getFormattedDate(date) {
+    var year = date.getFullYear();
+
+    var month = (1 + date.getMonth()).toString();
+    month = month.length > 1 ? month : '0' + month;
+
+    var day = date.getDate().toString();
+    day = day.length > 1 ? day : '0' + day;
+
+    return year + '-' + month + '-' + day;
+  }
+
+  getFieldValue(data: Object, column: TgrMatTableColumn) {
+    if (column.callback) {
+      return column.callback(data);
+    }
+    var k: Array<string> = column.fieldName.split(".");
+    var keys = new Queue<string>(...k);
+    let value = this.getObjectValue(data, keys);
+    return column.isDateColumn ? this.datePipe.transform(value, 'medium') : value;
+  }
+
+  /**
+   * Used to find key value based on the key sequence provided
+   * @param data expects an object
+   * @param keys i.e. user.gender.type.type
+   */
+  getObjectValue(data: any, keys: Queue<string>) {
+    if ((!(data instanceof Object)) || (keys.length == 1)) {
+      return data[keys.tail];
+    }
+    let value = null;
+    Object.keys(data).forEach((key) => {
+      if ((key == keys.front) && (data[key] instanceof Object)) {
+        value = this.getObjectValue(data[key], keys);
+      } else if (key == keys.tail) {
+        value = data[key];
+      }
+    });
+    return value;
+
+  }
+
+  /**
+   * Refresh data table values
+   */
+  refreshTable() {
+    console.debug("Refreshed data tables");
+    //@ts-ignore
+    this.loadPage({ offset: this.page.number, limit: this.page.size }, this.getFilters());
+  }
+
+}
+/**
+ * Used to define datatable columns with attributes (columnName, fieldName, width, sortable, canAutoResize,
+ * draggable, resizable, isDateColumn)
+ */
+export interface TgrMatTableColumn {
+  /**
+   * column title
+   */
+  columnName: string;
+  /**
+   * Server side response field corresponding to the column i.e fullName may correspond to Name column
+   */
+  fieldName: string;
+  /**
+   * Width of the column
+   */
+  width?: number;
+  /**
+   * Enable sorting in a column
+   */
+  sortable?: boolean;
+  // /**
+  //  * Makes a column resizable
+  //  */
+  // canAutoResize?: boolean;
+  // /**
+  //  * Enables a column to be draggable
+  //  */
+  // draggable?: boolean;
+  // /**
+  //  * Makes a column resizable
+  //  */
+  // resizeable?: boolean;
+  /**
+   * Used to enable formating timestamp to string date
+   */
+  isDateColumn?: boolean;
+  /**
+   * Hide on small device less than 576px
+   */
+  hideOnXs?: boolean;
+  /**
+   * Callback function used for cell rendering.
+   *  Note: Function results are not sanitised
+   */
+  callback?: Function;
+}
+
+/**
+ * Used to display more actions column and the end of the table
+ */
+export class TgrMoreActions {
+  /**
+   * Action Column name e.g. More Actions
+   */
+  name: string = "Actions";
+  /**
+   * Field name id from the server response e.g userId
+   */
+  idFieldName: string = "id";
+  /**
+   * Actions e.g. Edit, Delete
+   */
+  actions: Array<TgrMoreActionData>;
+
+  constructor(actions: Array<TgrMoreActionData>, id?: string, name?: string) {
+    this.actions = actions;
+    this.name = name;
+    this.idFieldName = id;
+  }
+
+}
+
+export interface TgrMoreActionData {
+  /**
+   * Never mind this field it will be used by the library
+   */
+  id?: any;
+  /**
+   * Action name e.g. Edit, Delete
+   */
+  actionName: any;
+}
