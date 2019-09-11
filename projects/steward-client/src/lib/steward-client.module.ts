@@ -18,8 +18,10 @@ import {
   MatButtonModule,
   MatSortModule,
   MatMenuModule,
-  MatProgressSpinnerModule
+  MatProgressSpinnerModule,
+  MatAutocompleteModule
 } from '@angular/material';
+import { TgrAutocompleteComponent } from './tgr-autocomplete/tgr-autocomplete.component';
 
 @NgModule({
   imports: [
@@ -39,13 +41,15 @@ import {
     MatButtonModule,
     MatSortModule,
     MatMenuModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatAutocompleteModule
   ],
   declarations: [
     StewardClientComponent, 
-    TgrMaterialTableComponent
+    TgrMaterialTableComponent,
+    TgrAutocompleteComponent
   ],
-  exports: [StewardClientComponent, TgrMaterialTableComponent]
+  exports: [StewardClientComponent, TgrMaterialTableComponent, TgrAutocompleteComponent]
 })
 export class StewardClientModule {
   static forRoot(config: StewardConfig) {

@@ -4,7 +4,6 @@ import { Page } from '../entities/wrappers/page';
 import { ResponseWrapper } from '../entities/wrappers/response-wrapper';
 import { StewardClientService } from '../steward-client.service';
 import { DatatableComponent } from '@swimlane/ngx-datatable';
-import { Queue } from 'queue-typescript';
 import { SelectionModel } from '@angular/cdk/collections';
 import { NativeDateAdapter, PageEvent, MatSort, Sort } from "@angular/material";
 import { TgrDynamicControl } from '../entities/tgr-dynamic-control';
@@ -61,6 +60,11 @@ export declare class TgrMaterialTableComponent implements OnInit, AfterViewInit 
     filterComponents: Array<TgrDynamicControl<any>>;
     params: Map<string, any>;
     showDefaultFilters: boolean;
+    showNumberColumn: boolean;
+    /**
+     * Additional headers to be appended on the request headers
+     */
+    headers: Map<string, string | string[]>;
     page: Page<any>;
     selected: any[];
     table: DatatableComponent;
@@ -140,12 +144,6 @@ export declare class TgrMaterialTableComponent implements OnInit, AfterViewInit 
      */
     getFormattedDate(date: any): string;
     getFieldValue(data: Object, column: TgrMatTableColumn): any;
-    /**
-     * Used to find key value based on the key sequence provided
-     * @param data expects an object
-     * @param keys i.e. user.gender.type.type
-     */
-    getObjectValue(data: any, keys: Queue<string>): any;
     /**
      * Refresh data table values
      */

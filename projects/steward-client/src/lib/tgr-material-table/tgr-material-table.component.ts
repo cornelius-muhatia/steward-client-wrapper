@@ -80,7 +80,7 @@ export const APP_DATE_FORMATS =
 })
 export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
-  displayedColumns: string[] = ["checkbox"];
+  displayedColumns: string[] = [];
   @Output() selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   @Output() rowSelection = new EventEmitter<SelectionModel<any>>();
   @ViewChild(MatSort) sort: MatSort;
@@ -94,6 +94,11 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
   @Input() filterComponents: Array<TgrDynamicControl<any>> = [];
   @Input() params: Map<string, any>;
   @Input() showDefaultFilters: boolean = true;
+  @Input() showNumberColumn: boolean = false;
+  /**
+   * Additional headers to be appended on the request headers
+   */
+  @Input() headers: Map<string, string | string[]>;
   page: Page<any>;
   selected = [];
   @ViewChild(DatatableComponent) table: DatatableComponent;
@@ -120,6 +125,12 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
    */
   ngOnInit() {
     //intializing table columns
+    if(this.enableCheckbox){
+      this.displayedColumns.push("checkbox");
+    }
+    if(this.showNumberColumn){
+      this.displayedColumns.push("no");
+    }
     this.columns.forEach(c => {
       this.displayedColumns.push(c.fieldName);
     });
@@ -208,8 +219,14 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
     }
     request.set("page", pageInfo.offset);
     request.set("size", pageInfo.limit);
-    this.sterwardService.get(this.endpoint, request).subscribe(response => {
+    this.sterwardService.get(this.endpoint, request, this.headers).subscribe(response => {
       if (response.status == 200) {
+        if(this.showNumberColumn){
+          let no = 1 + (response.data.number * response.data.size);
+          response.data.content.forEach((val) => {
+            val['no'] = no++;
+          });
+        }
         this.page = response.data;
       }
       this.isLoadingResults = false;
@@ -248,10 +265,10 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
     let f: Map<String, any> = new Map();
     Object.keys(this.filterForm.value).forEach((val, key) => {
       // console.debug("Key is " + key + " and value " + val);
-      if(this.filterForm.value[val]){
-        if(val == 'from' || val == "to"){
+      if (this.filterForm.value[val]) {
+        if (val == 'from' || val == "to") {
           f.set(val, this.datePipe.transform(this.filterForm.value[val], 'yyyy-MM-dd'));
-        }else{
+        } else {
           f.set(val, this.filterForm.value[val]);
         }
       }
@@ -318,29 +335,8 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
     }
     var k: Array<string> = column.fieldName.split(".");
     var keys = new Queue<string>(...k);
-    let value = this.getObjectValue(data, keys);
+    let value = this.sterwardService.getObjectValue(data, keys);
     return column.isDateColumn ? this.datePipe.transform(value, 'medium') : value;
-  }
-
-  /**
-   * Used to find key value based on the key sequence provided
-   * @param data expects an object
-   * @param keys i.e. user.gender.type.type
-   */
-  getObjectValue(data: any, keys: Queue<string>) {
-    if ((!(data instanceof Object)) || (keys.length == 1)) {
-      return data[keys.tail];
-    }
-    let value = null;
-    Object.keys(data).forEach((key) => {
-      if ((key == keys.front) && (data[key] instanceof Object)) {
-        value = this.getObjectValue(data[key], keys);
-      } else if (key == keys.tail) {
-        value = data[key];
-      }
-    });
-    return value;
-
   }
 
   /**

@@ -1,5 +1,6 @@
 import { Component, EventEmitter, ViewChild } from '@angular/core';
-import { TgrMatTableColumn, TgrMoreActionData, TgrDynamicControl, TgrInput, TgrTextarea, TgrSelect, TgrMaterialTableComponent, TgrMoreActions } from 'steward-client'
+import { TgrMatTableColumn, TgrMoreActionData, TgrDynamicControl, InputAttribute, 
+  TgrInput, TgrTextarea, TgrSelect, TgrMaterialTableComponent, TgrMoreActions, StewardClientService } from 'steward-client'
 import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
@@ -20,12 +21,15 @@ export class AppComponent {
   matMoreActions: TgrMoreActions;
   filterControls: Array<TgrDynamicControl<any>>;
   selection: SelectionModel<any> = new SelectionModel<any>(true, []);
+  headers: Map<string, string | string[]>
    /**
    * 
    */
-  @ViewChild(TgrMaterialTableComponent) dataTable: TgrMaterialTableComponent;;
+  @ViewChild(TgrMaterialTableComponent) dataTable: TgrMaterialTableComponent;
 
-  constructor() {
+  inputAttribute: InputAttribute;
+
+  constructor(public client: StewardClientService<any, any>) {
     this.matMoreActions = new TgrMoreActions([
       { actionName: "View" }, { actionName: "Delete" }
     ], "id", "More Actions");
@@ -53,6 +57,13 @@ export class AppComponent {
       new TgrDynamicControl('Status', 'status', selectControl),
     ];
 
+    this.inputAttribute = {fieldName: "name", fieldId: "id", placeholder: "Role Name"};
+
+    this.headers = new Map();
+    this.headers.set("programId", "65b6d54a-e703-496a-b693-db0cbc4e9e15");
+
+    this.testCustomHeaders();
+
   }
 
   onActionsEvent(event: EventEmitter<TgrMoreActionData>) {
@@ -62,5 +73,14 @@ export class AppComponent {
 
   approveRecords(event){
     console.debug("Approving records", this.selection);
+  }
+
+  testCustomHeaders(){
+    // this.r
+    let headers: Map<string, string | string[]> = new Map();
+    headers.set("programId", "c0d4651a-5d9a-11e7-846e-06f77de3a7f0");
+    this.client.post("https://testapi.tulaa.io/user/users/list", [], headers).subscribe(response => {
+      console.info("Custom headers server response", response);
+    })
   }
 }

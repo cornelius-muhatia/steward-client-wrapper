@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders, HttpErrorResponse, HttpParams } from '@angular
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ResponseWrapper } from './entities/wrappers/response-wrapper';
+import { Queue } from 'queue-typescript';
 
 export class StewardConfig {
     base_url: string;
@@ -36,10 +37,10 @@ export class StewardClientService<T, E> {
      * 
      * @param token 
      */
-    setToken(token: string){
+    setToken(token: string) {
         if (this.config.access_token) {//update token header
             this.headers.set("Authorization", "Bearer " + token);
-        } else{//append access token if the environment has access token            
+        } else {//append access token if the environment has access token            
             this.headers = this.headers.append('Authorization', "Bearer " + token);
         }
     }
@@ -47,10 +48,11 @@ export class StewardClientService<T, E> {
      * Used to handle http post requests
      * @param endpoint expects either an endpoint or url
      * @param data a valid object
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    post(endpoint: string, data: T): Observable<ResponseWrapper<E>> {
+    post(endpoint: string, data: T, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>> {
 
-        return this.http.post(this.serviceURL(endpoint), JSON.stringify(data), { headers: this.headers }).pipe(
+        return this.http.post(this.serviceURL(endpoint), JSON.stringify(data), { headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers }).pipe(
             catchError(this.handleError<any>())
         );
     }
@@ -58,9 +60,10 @@ export class StewardClientService<T, E> {
     /**
      * Used to handle http post requests
      * @param endpoint expects either an endpoint or url
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    put(endpoint: string, data: T): Observable<ResponseWrapper<E>> {
-        return this.http.put(this.serviceURL(endpoint), JSON.stringify(data), { headers: this.headers }).pipe(
+    put(endpoint: string, data: T, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>> {
+        return this.http.put(this.serviceURL(endpoint), JSON.stringify(data), { headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers }).pipe(
             catchError(this.handleError<any>())
         );
     }
@@ -69,9 +72,10 @@ export class StewardClientService<T, E> {
      * Handles http delete request
      * @param endpoint expects either an endpoint or url
      * @param data 
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    delete(endpoint: string, data: T): Observable<ResponseWrapper<E>> {
-        return this.http.request('delete', this.serviceURL(endpoint), { headers: this.headers, body: JSON.stringify(data) }).pipe(
+    delete(endpoint: string, data: T, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>> {
+        return this.http.request('delete', this.serviceURL(endpoint), { headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers, body: JSON.stringify(data) }).pipe(
             catchError(this.handleError<any>())
         );
     }
@@ -79,11 +83,12 @@ export class StewardClientService<T, E> {
     /**
      * Handles http get request
      * @param endpoint expects either an endpoint or url
-     * @param data 
+     * @param data request params
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    get(endpoint: string, data?: Map<string, string>): Observable<ResponseWrapper<E>> {
+    get(endpoint: string, data?: Map<string, string>, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>> {
         const options = {
-            headers: this.headers,
+            headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers,
             params: this.getHttpParams(data)
         };
         return this.http.get(this.serviceURL(endpoint), options).pipe(
@@ -115,12 +120,12 @@ export class StewardClientService<T, E> {
         Object.keys(data).forEach((key) => {
             formData.append(key, data[key]);
         });
-        if(this.headers.get("Authorization") && (!headers)){
+        if (this.headers.get("Authorization") && (!headers)) {
             headers = new HttpHeaders({ 'Authorization': 'Bearer ' + this.token });
-        } else if(!headers){
+        } else if (!headers) {
             headers = new HttpHeaders();
         }
-        return this.http.post(this.serviceURL(endpoint), formData, { headers: headers}).pipe(
+        return this.http.post(this.serviceURL(endpoint), formData, { headers: headers }).pipe(
             catchError(this.handleError<any>())
         );
     }
@@ -226,13 +231,13 @@ export class StewardClientService<T, E> {
      * Used to validate if a string is a valid URL
      * @param url
      */
-    public isURL(url: string): boolean{
+    public isURL(url: string): boolean {
         try {
             new URL(url);
             return true;
-          } catch (_) {
-            return false;  
-          }
+        } catch (_) {
+            return false;
+        }
     }
 
     /**
@@ -240,7 +245,40 @@ export class StewardClientService<T, E> {
      * @param url 
      * @see base_url
      */
-    private serviceURL(url: string): string{
+    public serviceURL(url: string): string {
         return (this.isURL(url)) ? url : this.base_url + url;
+    }
+
+    /**
+   * Used to find key value based on the key sequence provided
+   * @param data expects an object
+   * @param keys i.e. user.gender.type.type
+   */
+    public getObjectValue(data: any, keys: Queue<string>) {
+        if ((!(data instanceof Object)) || (keys.length == 1)) {
+            return data[keys.tail];
+        }
+        let value = null;
+        Object.keys(data).forEach((key) => {
+            if ((key == keys.front) && (data[key] instanceof Object)) {
+                value = this.getObjectValue(data[key], keys);
+            } else if (key == keys.tail) {
+                value = data[key];
+            }
+        });
+        return value;
+
+    }
+    
+    /**
+     * Used to append headers the current httpHeaders
+     * @returns merged headers
+     */
+    public appendHeaders(entries: Map<String, string | string[]>): HttpHeaders{
+        let customHeaders: HttpHeaders = this.headers;
+        entries.forEach((val: string | string[], key: string) => {
+            customHeaders = customHeaders.append(key, val);
+        });
+        return customHeaders;
     }
 }

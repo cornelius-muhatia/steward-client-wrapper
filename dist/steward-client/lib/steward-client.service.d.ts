@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ResponseWrapper } from './entities/wrappers/response-wrapper';
+import { Queue } from 'queue-typescript';
 export declare class StewardConfig {
     base_url: string;
     access_token?: string;
@@ -23,25 +24,29 @@ export declare class StewardClientService<T, E> {
      * Used to handle http post requests
      * @param endpoint expects either an endpoint or url
      * @param data a valid object
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    post(endpoint: string, data: T): Observable<ResponseWrapper<E>>;
+    post(endpoint: string, data: T, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>>;
     /**
      * Used to handle http post requests
      * @param endpoint expects either an endpoint or url
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    put(endpoint: string, data: T): Observable<ResponseWrapper<E>>;
+    put(endpoint: string, data: T, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>>;
     /**
      * Handles http delete request
      * @param endpoint expects either an endpoint or url
      * @param data
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    delete(endpoint: string, data: T): Observable<ResponseWrapper<E>>;
+    delete(endpoint: string, data: T, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>>;
     /**
      * Handles http get request
      * @param endpoint expects either an endpoint or url
-     * @param data
+     * @param data request params
+     * @param addHeaders additional headers to be appended to existing headers
      */
-    get(endpoint: string, data?: Map<string, string>): Observable<ResponseWrapper<E>>;
+    get(endpoint: string, data?: Map<string, string>, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>>;
     /**
      * Fetch a file
      * @param endpoint expects either an endpoint or url
@@ -97,5 +102,16 @@ export declare class StewardClientService<T, E> {
      * @param url
      * @see base_url
      */
-    private serviceURL(url);
+    serviceURL(url: string): string;
+    /**
+   * Used to find key value based on the key sequence provided
+   * @param data expects an object
+   * @param keys i.e. user.gender.type.type
+   */
+    getObjectValue(data: any, keys: Queue<string>): any;
+    /**
+     * Used to append headers the current httpHeaders
+     * @returns merged headers
+     */
+    appendHeaders(entries: Map<String, string | string[]>): HttpHeaders;
 }

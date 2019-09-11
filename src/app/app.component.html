@@ -4,7 +4,12 @@
 <div class="container">
     <div class="row">
         <div class="col-md-12">
-            <tgr-material-table [showDefaultFilters] = "false" [endpoint] = "'/role'" [columns] = "matColumns" (actionsEvent) = "onActionsEvent($event)" [filterComponents] = "filterControls" ([selection]) = "selection"></tgr-material-table>
+            <tgr-autocomplete [icon] = "android" [url] = "'http://localhost:8084/role'" [inputAttribute] = "inputAttribute" ></tgr-autocomplete>
+        </div>
+        <div class="col-md-12">
+            <tgr-material-table [enableCheckbox] = "true" [showNumberColumn] = "true" [showDefaultFilters] = "true" [endpoint] = "'/role'" 
+            [columns] = "matColumns" (actionsEvent) = "onActionsEvent($event)" [filterComponents] = "filterControls" 
+            ([selection]) = "selection" [headers] = "headers"></tgr-material-table>
         </div>
     </div>
     <div class="row">
