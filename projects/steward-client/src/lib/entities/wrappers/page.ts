@@ -5,7 +5,7 @@ export class Page<T> {
     /**
      * Number of items per page same as limit
      */
-    size: number = 10;
+    size: number = 20;
     /**
      * Total items available on the server
      */

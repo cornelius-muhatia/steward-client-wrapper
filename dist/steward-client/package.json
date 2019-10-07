@@ -1,6 +1,6 @@
 {
   "name": "steward-client",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Extends angular material table server side and rendering functionality while also exposing steward client for processing http requests",
   "author": {
     "name": "Cornelius M.",

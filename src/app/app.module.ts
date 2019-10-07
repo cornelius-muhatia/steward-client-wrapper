@@ -28,7 +28,7 @@ export const routes: Routes = [
     BrowserAnimationsModule,
     BrowserModule,
     StewardClientModule.forRoot(
-      {base_url: "https://test-gateway.tulaa.io/uaa-server", access_token: "65b6d54a-e703-496a-b693-db0cbc4e9e15"}
+      {base_url: "https://test-gateway.tulaa.io/uaa-server", access_token: "e6dcad1f-6b35-49aa-bd97-d636b4217a54"}
     ),
     RouterModule.forRoot(
       routes,
