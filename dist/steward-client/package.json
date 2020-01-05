@@ -1,28 +1,13 @@
 {
   "name": "steward-client",
-  "version": "1.0.9",
+  "version": "2.0.0",
   "description": "Extends angular material table server side and rendering functionality while also exposing steward client for processing http requests",
   "author": {
     "name": "Cornelius M.",
     "email": "jdialogc@gmail.com"
   },
   "peerDependencies": {
-    "@angular/common": "^6.0.3",
-    "@angular/core": "^6.0.3",
-    "@angular/compiler": "^6.0.3",
-    "@angular/animations": "^6.0.3",
-    "@angular/forms": "^6.0.3",
-    "@angular/http": "^6.0.3",
-    "@angular/platform-browser": "^6.0.3",
-    "@angular/platform-browser-dynamic": "^6.0.3",
-    "@angular/router": "^6.0.3",
-    "@angular/material": "^7.1.1",
-    "core-js": "^2.5.4",
-    "rxjs": "^6.0.0",
-    "rxjs-compat": "^6.1.0",
-    "zone.js": "^0.8.26",
-    "queue-typescript": "^1.0.1",
-    "@swimlane/ngx-datatable": "^11.3.2"
+    "@angular/material": "^8.2.3"
   },
   "main": "bundles/steward-client.umd.js",
   "module": "fesm5/steward-client.js",

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
 @Component({
-  selector: 'stw-steward-client',
+  selector: 'lib-steward-client',
   template: `
     <p>
       steward-client works!

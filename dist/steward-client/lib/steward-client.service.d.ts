@@ -1,7 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ResponseWrapper } from './entities/wrappers/response-wrapper';
-import { Queue } from 'queue-typescript';
 export declare class StewardConfig {
     base_url: string;
     access_token?: string;
@@ -76,12 +75,12 @@ export declare class StewardClientService<T, E> {
      * Convert map to HttpParams
      * @param data
      */
-    private getHttpParams(data);
+    private getHttpParams;
     /**
      * Used to catch exception thrown by http client returns internal server error
      * if status 500 is encountered
      */
-    private handleError<ResponseWrapper>();
+    private handleError;
     /**
      * Used to render action buttons
      */
@@ -108,7 +107,7 @@ export declare class StewardClientService<T, E> {
    * @param data expects an object
    * @param keys i.e. user.gender.type.type
    */
-    getObjectValue(data: any, keys: Queue<string>): any;
+    getObjectValue(data: any, keys: Array<string>): any;
     /**
      * Used to append headers the current httpHeaders
      * @returns merged headers

@@ -5,4 +5,3 @@ export * from './lib/entities/wrappers/page';
 export * from './lib/entities/wrappers/response-wrapper';
 export * from './lib/tgr-material-table/tgr-material-table.component';
 export * from './lib/entities/tgr-dynamic-control';
-export * from './lib/tgr-autocomplete/tgr-autocomplete.component';

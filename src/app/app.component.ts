@@ -1,5 +1,5 @@
 import { Component, EventEmitter, ViewChild } from '@angular/core';
-import { TgrMatTableColumn, TgrMoreActionData, TgrDynamicControl, InputAttribute, 
+import { TgrMatTableColumn, TgrMoreActionData, TgrDynamicControl,
   TgrInput, TgrTextarea, TgrSelect, TgrMaterialTableComponent, TgrMoreActions, StewardClientService } from 'steward-client'
 import { SelectionModel } from '@angular/cdk/collections';
 
@@ -9,12 +9,12 @@ import { SelectionModel } from '@angular/cdk/collections';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'app';
+  title = 'steward-client-wrapper';
 
   matColumns: Array<TgrMatTableColumn> = [
     { columnName: "Role Name", fieldName: "name", callback: function(model){
-      return "<a href='#'>" + model['name'] + '</a>';
-    }},
+        return "<a href='#'>" + model['name'] + '</a>';
+      }},
     { columnName: "Description", fieldName: "description"},
     { columnName: "Date Created", isDateColumn: true, fieldName: "creationDate" }
   ];
@@ -22,12 +22,10 @@ export class AppComponent {
   filterControls: Array<TgrDynamicControl<any>>;
   selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   headers: Map<string, string | string[]>
-   /**
-   * 
+  /**
+   *
    */
-  @ViewChild(TgrMaterialTableComponent) dataTable: TgrMaterialTableComponent;
-
-  inputAttribute: InputAttribute;
+  @ViewChild(TgrMaterialTableComponent, {static: false}) dataTable: TgrMaterialTableComponent;
 
   constructor(public client: StewardClientService<any, any>) {
     this.matMoreActions = new TgrMoreActions([
@@ -57,7 +55,6 @@ export class AppComponent {
       new TgrDynamicControl('Status', 'status', selectControl),
     ];
 
-    this.inputAttribute = {fieldName: "name", fieldId: "id", placeholder: "Role Name"};
 
     this.headers = new Map();
     // this.headers.set("programId", "65b6d54a-e703-496a-b693-db0cbc4e9e15");

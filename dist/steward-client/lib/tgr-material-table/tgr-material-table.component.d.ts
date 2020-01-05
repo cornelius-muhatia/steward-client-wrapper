@@ -3,7 +3,6 @@ import { FormGroup } from '@angular/forms';
 import { Page } from '../entities/wrappers/page';
 import { ResponseWrapper } from '../entities/wrappers/response-wrapper';
 import { StewardClientService } from '../steward-client.service';
-import { DatatableComponent } from '@swimlane/ngx-datatable';
 import { SelectionModel } from '@angular/cdk/collections';
 import { NativeDateAdapter, PageEvent, MatSort, Sort } from "@angular/material";
 import { TgrDynamicControl } from '../entities/tgr-dynamic-control';
@@ -67,7 +66,6 @@ export declare class TgrMaterialTableComponent implements OnInit, AfterViewInit 
     headers: Map<string, string | string[]>;
     page: Page<any>;
     selected: any[];
-    table: DatatableComponent;
     filter: Object;
     filterForm: FormGroup;
     private sortParams;
@@ -116,7 +114,7 @@ export declare class TgrMaterialTableComponent implements OnInit, AfterViewInit 
     /**
      * Used to get filter entries from the filter form. Also adds sort parameters to request
      */
-    private getFilters();
+    private getFilters;
     /**
      * Used to process table filter. If date filter is not provide the from value is
      * set to 2018-01-01 and to value is set to 1 year from today

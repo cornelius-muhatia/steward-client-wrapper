@@ -4,8 +4,6 @@ import { Page } from '../entities/wrappers/page';
 import { MlkDynamicControl, MlkInput, MlkTextarea, MlkSelect } from '../entities/wrappers/mlk-dynamic-control';
 import { ResponseWrapper } from '../entities/wrappers/response-wrapper';
 import { StewardClientService } from '../steward-client.service';
-import { DatatableComponent } from '@swimlane/ngx-datatable';
-import { Queue } from 'queue-typescript';
 import { SelectionModel } from '@angular/cdk/collections';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { NativeDateAdapter, PageEvent, MatSort, Sort } from "@angular/material";
@@ -83,7 +81,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = [];
   @Output() selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   @Output() rowSelection = new EventEmitter<SelectionModel<any>>();
-  @ViewChild(MatSort) sort: MatSort;
+  @ViewChild(MatSort, {static: true}) sort: MatSort;
 
 
   @Input() columns: Array<TgrMatTableColumn> = [];
@@ -101,7 +99,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
   @Input() headers: Map<string, string | string[]>;
   page: Page<any>;
   selected = [];
-  @ViewChild(DatatableComponent) table: DatatableComponent;
+  // @ViewChild(DatatableComponent) table: DatatableComponent;
   filter: Object = {};
   filterForm: FormGroup;
   private sortParams: Sort;
@@ -240,7 +238,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Used tolisten to pagination events/actions
-   * @param page 
+   * @param page
    */
   pageEvent(page: PageEvent) {
     this.loadPage({ limit: page.pageSize, offset: page.pageIndex }, this.getFilters());
@@ -249,7 +247,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Used to processing table sorting
-   * @param event 
+   * @param event
    */
   processSorting(event: Sort) {
     this.sortParams = event;
@@ -280,9 +278,9 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
     return f;
   }
   /**
-   * Used to process table filter. If date filter is not provide the from value is 
+   * Used to process table filter. If date filter is not provide the from value is
    * set to 2018-01-01 and to value is set to 1 year from today
-   * @param form 
+   * @param form
    * @deprecated
    */
   processFilter(form) {
@@ -333,9 +331,8 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
     if (column.callback) {
       return column.callback(data);
     }
-    var k: Array<string> = column.fieldName.split(".");
-    var keys = new Queue<string>(...k);
-    let value = this.sterwardService.getObjectValue(data, keys);
+    let k: Array<string> = column.fieldName.split(".");
+    let value = this.sterwardService.getObjectValue(data, k);
     return column.isDateColumn ? this.datePipe.transform(value, 'medium') : value;
   }
 

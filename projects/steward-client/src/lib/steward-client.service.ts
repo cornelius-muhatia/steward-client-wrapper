@@ -3,7 +3,6 @@ import { HttpClient, HttpHeaders, HttpErrorResponse, HttpParams } from '@angular
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ResponseWrapper } from './entities/wrappers/response-wrapper';
-import { Queue } from 'queue-typescript';
 
 export class StewardConfig {
     base_url: string;
@@ -34,13 +33,13 @@ export class StewardClientService<T, E> {
 
     /**
      *  Used to update authorization token. Currently supports bearer token
-     * 
-     * @param token 
+     *
+     * @param token
      */
     setToken(token: string) {
         if (this.config.access_token) {//update token header
             this.headers.set("Authorization", "Bearer " + token);
-        } else {//append access token if the environment has access token            
+        } else {//append access token if the environment has access token
             this.headers = this.headers.append('Authorization', "Bearer " + token);
         }
     }
@@ -71,7 +70,7 @@ export class StewardClientService<T, E> {
     /**
      * Handles http delete request
      * @param endpoint expects either an endpoint or url
-     * @param data 
+     * @param data
      * @param addHeaders additional headers to be appended to existing headers
      */
     delete(endpoint: string, data: T, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>> {
@@ -99,7 +98,7 @@ export class StewardClientService<T, E> {
     /**
      * Fetch a file
      * @param endpoint expects either an endpoint or url
-     * @param data 
+     * @param data
      */
     getFile(endpoint: string, data?: Map<string, string>): Observable<ResponseWrapper<E>> {
         const options = {
@@ -112,8 +111,8 @@ export class StewardClientService<T, E> {
     /**
      * if
      * @param endpoint expects either an endpoint or url
-     * @param data 
-     * @param headers 
+     * @param data
+     * @param headers
      */
     postFormData(endpoint: string, data: T, headers?: HttpHeaders): Observable<ResponseWrapper<E>> {
         const formData: FormData = new FormData();
@@ -174,7 +173,7 @@ export class StewardClientService<T, E> {
 
     /**
      * Convert map to HttpParams
-     * @param data 
+     * @param data
      */
     private getHttpParams(data: Map<string, string>): HttpParams {
         if (data == undefined) {
@@ -242,7 +241,7 @@ export class StewardClientService<T, E> {
 
     /**
      * If the url parameter is an endpoint it appends to the base url
-     * @param url 
+     * @param url
      * @see base_url
      */
     public serviceURL(url: string): string {
@@ -254,22 +253,22 @@ export class StewardClientService<T, E> {
    * @param data expects an object
    * @param keys i.e. user.gender.type.type
    */
-    public getObjectValue(data: any, keys: Queue<string>) {
-        if ((!(data instanceof Object)) || (keys.length == 1)) {
-            return data[keys.tail];
+    public getObjectValue(data: any, keys: Array<string>) {
+        if ((!(data instanceof Object)) || (keys.length === 1)) {
+            return data[keys[keys.length - 1]];
         }
         let value = null;
         Object.keys(data).forEach((key) => {
-            if ((key == keys.front) && (data[key] instanceof Object)) {
+            if ((key === keys[0]) && (data[key] instanceof Object)) {
                 value = this.getObjectValue(data[key], keys);
-            } else if (key == keys.tail) {
+            } else if (key === keys[keys.length - 1]) {
                 value = data[key];
             }
         });
         return value;
 
     }
-    
+
     /**
      * Used to append headers the current httpHeaders
      * @returns merged headers

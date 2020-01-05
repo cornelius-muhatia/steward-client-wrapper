@@ -1,21 +1,27 @@
+# StewardClientWrapper
 
-# Steward Client
-This library is used to generate material table using [spring boot pagination](https://docs.spring.io/spring-data/rest/docs/2.0.0.M1/reference/html/paging-chapter.html) response.
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.3.21.
 
-##Features
-- Pagination
-- Sorting (including date range)
-- Searching
+## Development server
 
-##Installation
-1. Add the following package to your package.json "steward-client": "1.0.0"
-2. Replace the file path  in your package.json with the new path
-3. Execute npm install
+Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
-##API
-###Properties
-| Name | Description |
-| --- | --- |
-| @Input() endpoint: string | Resource url endpoint e.g. "/users" OR "/users?status=1" |
-| @Input() selection: [SelectionModel](https://github.com/angular/material2/blob/master/src/cdk/collections/selection.ts)<any>| Table selection model |  
+## Code scaffolding
 
+Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+
+## Build
+
+Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+
+## Running unit tests
+
+Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+
+## Running end-to-end tests
+
+Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+
+## Further help
+
+To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).

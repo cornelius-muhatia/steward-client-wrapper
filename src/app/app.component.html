@@ -2,18 +2,15 @@
 <router-outlet></router-outlet>
 <hr />
 <div class="container">
-    <div class="row">
-        <div class="col-md-12">
-            <tgr-autocomplete [icon] = "android" [url] = "'http://localhost:8084/role'" [inputAttribute] = "inputAttribute" ></tgr-autocomplete>
-        </div>
-        <div class="col-md-12">
-            <tgr-material-table [enableCheckbox] = "true" [showNumberColumn] = "true" [showDefaultFilters] = "true" [endpoint] = "'/role'" 
-            [columns] = "matColumns" (actionsEvent) = "onActionsEvent($event)" [filterComponents] = "filterControls" 
-            ([selection]) = "selection" [headers] = "headers"></tgr-material-table>
-        </div>
+  <div class="row">
+    <div class="col-md-12">
+      <tgr-material-table [enableCheckbox] = "true" [showNumberColumn] = "true" [showDefaultFilters] = "true" [endpoint] = "'/role'"
+                          [columns] = "matColumns" (actionsEvent) = "onActionsEvent($event)" [filterComponents] = "filterControls"
+                          ([selection]) = "selection" [headers] = "headers"></tgr-material-table>
     </div>
-    <div class="row">
-        <button class="btn btn-primary" (click) = "approveRecords($event)">Approve Actions</button>
-    </div>
+  </div>
+  <div class="row">
+    <button class="btn btn-primary" (click) = "approveRecords($event)">Approve Actions</button>
+  </div>
 </div>
 <hr />
