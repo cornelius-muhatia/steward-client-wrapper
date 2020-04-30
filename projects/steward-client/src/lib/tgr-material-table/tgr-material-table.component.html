@@ -9,7 +9,7 @@
             </div>
           </div>
         </div>
-        <form (ngSubmit)="processFilter(filterForm)" [formGroup]="filterForm">
+        <form (ngSubmit)="processFilter()" [formGroup]="filterForm">
           <div class="row">
             <div class="col-md-3  mb-3" *ngFor="let control of filterComponents">
               <!-- Intialize form select control -->
@@ -106,7 +106,6 @@
             [indeterminate]="selection.hasValue() && !isAllSelected()">
           </mat-checkbox>
         </th>
-        <!-- <td mat-cell *matCellDef="let element"> <mat-checkbox></mat-checkbox> </td> -->
         <td mat-cell *matCellDef="let row">
           <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null" [checked]="selection.isSelected(row)">
           </mat-checkbox>
@@ -125,9 +124,6 @@
       <ng-container [matColumnDef]="c.fieldName" *ngFor="let c of columns">
         <th mat-header-cell *matHeaderCellDef mat-sort-header [class.hide_on_xs]="c.hideOnXs"> {{c.columnName}} </th>
         <td mat-cell *matCellDef="let element" [class.hide_on_xs]="c.hideOnXs"> 
-          <!-- {{c.isDateColumn ?
-          (getFieldValue(element, c) | date:'medium') :
-          getFieldValue(element, c)}} -->
            <div [innerHtml] = "getFieldValue(element, c)"></div></td>
       </ng-container>
 
@@ -139,7 +135,7 @@
             <mat-icon>list</mat-icon>
           </button>
           <mat-menu #menu="matMenu">
-            <button mat-menu-item *ngFor="let action of moreActions.actions" (click)="onActionClick({id: element[moreActions.idFieldName], actionName: action.actionName})">{{action.actionName}}</button>
+            <button mat-menu-item *ngFor="let action of moreActions.actions" (click)="onActionClick({data: element, id: element[moreActions.idFieldName], actionName: action.actionName})">{{action.actionName}}</button>
           </mat-menu>
         </td>
       </ng-container>

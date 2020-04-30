@@ -6,7 +6,7 @@ import { ResponseWrapper } from '../entities/wrappers/response-wrapper';
 import { StewardClientService } from '../steward-client.service';
 import { SelectionModel } from '@angular/cdk/collections';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
-import { NativeDateAdapter, PageEvent, MatSort, Sort } from "@angular/material";
+import { NativeDateAdapter, PageEvent, MatSort, Sort } from '@angular/material';
 import { TgrDynamicControl, TgrInput, TgrSelect, TgrTextarea } from '../entities/tgr-dynamic-control';
 import { DatePipe } from '@angular/common';
 
@@ -81,7 +81,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = [];
   @Output() selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   @Output() rowSelection = new EventEmitter<SelectionModel<any>>();
-  @ViewChild(MatSort, {static: true}) sort: MatSort;
+  @ViewChild(MatSort, { static: true }) sort: MatSort;
 
 
   @Input() columns: Array<TgrMatTableColumn> = [];
@@ -115,7 +115,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
   constructor(private sterwardService: StewardClientService<ResponseWrapper<Page<any>>, any>) {
     this.page = new Page();
     this.page.content = [];
-    this.datePipe = new DatePipe("en-US");
+    this.datePipe = new DatePipe('en-US');
   }
 
   /**
@@ -123,19 +123,19 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
    */
   ngOnInit() {
     //intializing table columns
-    if(this.enableCheckbox){
-      this.displayedColumns.push("checkbox");
+    if (this.enableCheckbox) {
+      this.displayedColumns.push('checkbox');
     }
-    if(this.showNumberColumn){
-      this.displayedColumns.push("no");
+    if (this.showNumberColumn) {
+      this.displayedColumns.push('no');
     }
     this.columns.forEach(c => {
       this.displayedColumns.push(c.fieldName);
     });
     if (this.moreActions) {
-      this.displayedColumns.push("actions");
+      this.displayedColumns.push('actions');
     } else {
-      console.debug("moreActions not injected skipping rendering 'More Actions' column");
+      console.debug('moreActions not injected skipping rendering \'More Actions\' column');
     }
     let group = {};
     this.filterComponents.forEach(comp => {
@@ -156,9 +156,9 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
       group[comp.name] = new FormControl('', validators)
     });
     //add default controls
-    group['from'] = new FormControl('', Validators.maxLength(100));
-    group['to'] = new FormControl('', Validators.maxLength(100));
-    group['needle'] = new FormControl('', Validators.maxLength(200));
+    group.from = new FormControl('', Validators.maxLength(100));
+    group.to = new FormControl('', Validators.maxLength(100));
+    group.needle = new FormControl('', Validators.maxLength(200));
     this.filterForm = new FormGroup(group);
     this.loadPage({ offset: 0, limit: this.page.size }, null);
   }
@@ -186,7 +186,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Used to emit click event of the actions
-   * @param event
+   * @param event Actions data
    */
   onActionClick(event: TgrMoreActionData) {
     this.actionsEvent.emit(event);
@@ -194,8 +194,9 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Process server request of datable
-   * @param pageInfo
-   * @param filters
+   *
+   * @param pageInfo Page variables
+   * @param filters Filter variables
    */
   loadPage(pageInfo, filters) {
     if (!this.endpoint) {
@@ -210,19 +211,19 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
     }
     if (this.params) {
       this.params.forEach((value, key) => {
-        if (key != null && key != undefined) { //ignore null values
+        if (key != null && key !== undefined) { // ignore null values
           request.set(key, value);
         }
       });
     }
-    request.set("page", pageInfo.offset);
-    request.set("size", pageInfo.limit);
+    request.set('page', pageInfo.offset);
+    request.set('size', pageInfo.limit);
     this.sterwardService.get(this.endpoint, request, this.headers).subscribe(response => {
-      if (response.status == 200) {
-        if(this.showNumberColumn){
+      if (response.status === 200) {
+        if (this.showNumberColumn) {
           let no = 1 + (response.data.number * response.data.size);
           response.data.content.forEach((val) => {
-            val['no'] = no++;
+            val.no = no++;
           });
         }
         this.page = response.data;
@@ -230,7 +231,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
       this.isLoadingResults = false;
     },
       error => {
-        console.debug("Server request has failed");
+        console.debug('Server request has failed');
         this.isLoadingResults = false;
       });
 
@@ -238,7 +239,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Used tolisten to pagination events/actions
-   * @param page
+   * @param page page variables
    */
   pageEvent(page: PageEvent) {
     this.loadPage({ limit: page.pageSize, offset: page.pageIndex }, this.getFilters());
@@ -247,7 +248,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Used to processing table sorting
-   * @param event
+   * @param event Sort variables
    */
   processSorting(event: Sort) {
     this.sortParams = event;
@@ -258,39 +259,38 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
    * Used to get filter entries from the filter form. Also adds sort parameters to request
    */
   private getFilters() {
-    //@ts-ignore
-    // let f: Map<String, any> = new Map(Object.entries(this.filterForm.value));
-    let f: Map<String, any> = new Map();
+    const f: Map<string, any> = new Map<string, any>();
     Object.keys(this.filterForm.value).forEach((val, key) => {
       // console.debug("Key is " + key + " and value " + val);
       if (this.filterForm.value[val]) {
-        if (val == 'from' || val == "to") {
+        if (val === 'from' || val === 'to') {
           f.set(val, this.datePipe.transform(this.filterForm.value[val], 'yyyy-MM-dd'));
         } else {
           f.set(val, this.filterForm.value[val]);
         }
       }
     })
-    //add sorting parameters
+    // add sorting parameters
     if (this.sortParams) {
-      f.set("sort", this.sortParams.active + "," + this.sortParams.direction);
+      f.set('sort', this.sortParams.active + ',' + this.sortParams.direction);
     }
     return f;
   }
+
   /**
    * Used to process table filter. If date filter is not provide the from value is
    * set to 2018-01-01 and to value is set to 1 year from today
-   * @param form
+   *
    * @deprecated
    */
-  processFilter(form) {
-    //@ts-ignore
+  processFilter() {
     this.loadPage({ offset: this.page.number, limit: this.page.size }, this.getFilters());
   }
 
   /**
-   * Used to check if miliki control is input
-   * @param control
+   * Used to check if additional control is input
+   *
+   * @param control additional control
    */
   isInput(control: any) {
     return control instanceof TgrInput;
@@ -298,7 +298,8 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Used to check if miliki control is select
-   * @param control
+   *
+   * @param control Select control
    */
   isSelect(control: any) {
     return control instanceof TgrSelect;
@@ -313,26 +314,26 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
 
   /**
    * Used to format date to string yyyy-MM-dd
-   * @param date
+   * @param date Date variable
    */
   getFormattedDate(date) {
-    var year = date.getFullYear();
+    const year = date.getFullYear();
 
-    var month = (1 + date.getMonth()).toString();
+    let month = (1 + date.getMonth()).toString();
     month = month.length > 1 ? month : '0' + month;
 
-    var day = date.getDate().toString();
+    let day = date.getDate().toString();
     day = day.length > 1 ? day : '0' + day;
 
     return year + '-' + month + '-' + day;
   }
 
-  getFieldValue(data: Object, column: TgrMatTableColumn) {
+  getFieldValue(data: object, column: TgrMatTableColumn) {
     if (column.callback) {
       return column.callback(data);
     }
-    let k: Array<string> = column.fieldName.split(".");
-    let value = this.sterwardService.getObjectValue(data, k);
+    const k: Array<string> = column.fieldName.split('.');
+    const value = this.sterwardService.getObjectValue(data, k);
     return column.isDateColumn ? this.datePipe.transform(value, 'medium') : value;
   }
 
@@ -340,8 +341,7 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
    * Refresh data table values
    */
   refreshTable() {
-    console.debug("Refreshed data tables");
-    //@ts-ignore
+    console.debug('Refreshed data tables');
     this.loadPage({ offset: this.page.number, limit: this.page.size }, this.getFilters());
   }
 
@@ -391,7 +391,7 @@ export interface TgrMatTableColumn {
    * Callback function used for cell rendering.
    *  Note: Function results are not sanitised
    */
-  callback?: Function;
+  callback?: (data: any) => object;
 }
 
 /**
@@ -401,20 +401,32 @@ export class TgrMoreActions {
   /**
    * Action Column name e.g. More Actions
    */
-  name: string = "Actions";
+  name = 'Actions';
   /**
    * Field name id from the server response e.g userId
+   * @deprecated
    */
-  idFieldName: string = "id";
+  idFieldName = 'id';
   /**
    * Actions e.g. Edit, Delete
    */
   actions: Array<TgrMoreActionData>;
+  /**
+   * Callback function
+   */
+  callback?: (data: any) => object;
 
-  constructor(actions: Array<TgrMoreActionData>, id?: string, name?: string) {
+  /**
+   * @param actions Rows action data
+   * @param id Id field name currently deprecated
+   * @param name Actions column name
+   * @param callback Rows callback function for data sanitization
+   */
+  constructor(actions: Array<TgrMoreActionData>, id?: string, name?: string, callback?: (data: any) => object) {
     this.actions = actions;
     this.name = name;
     this.idFieldName = id;
+    this.callback = callback;
   }
 
 }
@@ -422,10 +434,15 @@ export class TgrMoreActions {
 export interface TgrMoreActionData {
   /**
    * Never mind this field it will be used by the library
+   * @deprecated
    */
   id?: any;
   /**
    * Action name e.g. Edit, Delete
    */
   actionName: any;
+  /**
+   * 
+   */
+  data?: object;
 }
