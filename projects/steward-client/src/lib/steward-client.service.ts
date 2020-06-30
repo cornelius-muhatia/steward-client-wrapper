@@ -392,7 +392,6 @@ export class StewardClientService<T, E> {
      * Update access token and refresh token from session cookie
      */
     private updateAccessToken(){
-        console.debug("Updating session credentials...")
         let inst = this;
         document.cookie.split(';').forEach(function (item) {
             if(item.includes("token=")){
