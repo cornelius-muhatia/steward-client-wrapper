@@ -156,9 +156,9 @@ export class TgrMaterialTableComponent implements OnInit, AfterViewInit {
       group[comp.name] = new FormControl('', validators)
     });
     //add default controls
-    group.from = new FormControl('', Validators.maxLength(100));
-    group.to = new FormControl('', Validators.maxLength(100));
-    group.needle = new FormControl('', Validators.maxLength(200));
+    group['from'] = new FormControl('', Validators.maxLength(100));
+    group['to'] = new FormControl('', Validators.maxLength(100));
+    group['needle'] = new FormControl('', Validators.maxLength(200));
     this.filterForm = new FormGroup(group);
     this.loadPage({ offset: 0, limit: this.page.size }, null);
   }

@@ -1,24 +1,21 @@
-# StewardClient
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.2.14.
+# Steward Client
+This library is used to generate material table using [spring boot pagination](https://docs.spring.io/spring-data/rest/docs/2.0.0.M1/reference/html/paging-chapter.html) response.
 
-## Code scaffolding
+##Features
+- Pagination
+- Sorting (including date range)
+- Searching
 
-Run `ng generate component component-name --project steward-client` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project steward-client`.
-> Note: Don't forget to add `--project steward-client` or else it will be added to the default project in your `angular.json` file. 
+##Installation
+1. Add the following package to your package.json "steward-client": "1.0.0"
+2. Replace the file path  in your package.json with the new path
+3. Execute npm install
 
-## Build
+##API
+###Properties
+| Name | Description |
+| --- | --- |
+| @Input() endpoint: string | Resource url endpoint e.g. "/users" OR "/users?status=1" |
+| @Input() selection: [SelectionModel](https://github.com/angular/material2/blob/master/src/cdk/collections/selection.ts)<any>| Table selection model |  
 
-Run `ng build steward-client` to build the project. The build artifacts will be stored in the `dist/` directory.
-
-## Publishing
-
-After building your library with `ng build steward-client`, go to the dist folder `cd dist/steward-client` and run `npm publish`.
-
-## Running unit tests
-
-Run `ng test steward-client` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).

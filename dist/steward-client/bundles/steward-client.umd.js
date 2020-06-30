@@ -256,12 +256,40 @@
         StewardConfig.prototype.headers;
     }
     /**
+     * Oauth2 client details
+     */
+    var   /**
+     * Oauth2 client details
+     */
+    ClientDetails = /** @class */ (function () {
+        function ClientDetails() {
+        }
+        return ClientDetails;
+    }());
+    if (false) {
+        /** @type {?} */
+        ClientDetails.prototype.clientSecret;
+        /** @type {?} */
+        ClientDetails.prototype.clientId;
+    }
+    /**
      * @template T, E
      */
     var StewardClientService = /** @class */ (function () {
-        function StewardClientService(http$1, config) {
+        /**
+         * Constructor
+         *
+         * @param http http client service
+         * @param config base url, access token and request headers
+         * @param clientDetails Oauth2 client details
+         */
+        function StewardClientService(http$1, config, clientDetails) {
             this.http = http$1;
             this.config = config;
+            this.clientDetails = clientDetails;
+            /**
+             * Base url
+             */
             this.base_url = "/";
             this.base_url = config.base_url;
             if (config.headers) {
@@ -295,7 +323,7 @@
          */
         function (token) {
             if (this.config.access_token) { //update token header
-                this.headers.set("Authorization", "Bearer " + token);
+                this.headers = this.headers.set("Authorization", "Bearer " + token);
             }
             else { //append access token if the environment has access token
                 this.headers = this.headers.append('Authorization', "Bearer " + token);
@@ -322,6 +350,7 @@
          * @return {?}
          */
         function (endpoint, data, addHeaders) {
+            this.oauthContext();
             return this.http.post(this.serviceURL(endpoint), JSON.stringify(data), { headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers }).pipe(operators.catchError(this.handleError()));
         };
         /**
@@ -344,6 +373,7 @@
          * @return {?}
          */
         function (endpoint, data, addHeaders) {
+            this.oauthContext();
             return this.http.put(this.serviceURL(endpoint), JSON.stringify(data), { headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers }).pipe(operators.catchError(this.handleError()));
         };
         /**
@@ -367,6 +397,7 @@
          * @return {?}
          */
         function (endpoint, data, addHeaders) {
+            this.oauthContext();
             return this.http.request('delete', this.serviceURL(endpoint), { headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers, body: JSON.stringify(data) }).pipe(operators.catchError(this.handleError()));
         };
         /**
@@ -390,6 +421,7 @@
          * @return {?}
          */
         function (endpoint, data, addHeaders) {
+            this.oauthContext();
             /** @type {?} */
             var options = {
                 headers: addHeaders ? this.appendHeaders(addHeaders) : this.headers,
@@ -415,6 +447,7 @@
          * @return {?}
          */
         function (endpoint, data) {
+            this.oauthContext();
             /** @type {?} */
             var options = {
                 params: this.getHttpParams(data)
@@ -442,6 +475,7 @@
          * @return {?}
          */
         function (endpoint, data, headers) {
+            this.oauthContext();
             /** @type {?} */
             var formData = new FormData();
             Object.keys(data).forEach((/**
@@ -477,6 +511,7 @@
          * @return {?}
          */
         function (endpoint, data) {
+            this.oauthContext();
             /** @type {?} */
             var formData = new FormData();
             Object.keys(data).forEach((/**
@@ -517,6 +552,7 @@
          * @return {?}
          */
         function (endpoint, data) {
+            this.oauthContext();
             /** @type {?} */
             var formData = new FormData();
             Object.keys(data).forEach((/**
@@ -644,6 +680,7 @@
          * @return {?}
          */
         function (endpoint, data) {
+            this.oauthContext();
             /** @type {?} */
             var options = {
                 headers: this.headers,
@@ -759,26 +796,262 @@
             }));
             return customHeaders;
         };
+        /**
+         * Handles oauth authentication with password grant
+         *
+         * @param username user's username
+         * @param password user's password
+         * @param addHeaders additional headers to be appended to existing headers
+         */
+        /**
+         * Handles oauth authentication with password grant
+         *
+         * @param {?} endpoint
+         * @param {?} username user's username
+         * @param {?} password user's password
+         * @param {?=} addHeaders additional headers to be appended to existing headers
+         * @return {?}
+         */
+        StewardClientService.prototype.authenticate = /**
+         * Handles oauth authentication with password grant
+         *
+         * @param {?} endpoint
+         * @param {?} username user's username
+         * @param {?} password user's password
+         * @param {?=} addHeaders additional headers to be appended to existing headers
+         * @return {?}
+         */
+        function (endpoint, username, password, addHeaders) {
+            var _this = this;
+            if (!this.clientDetails) {
+                console.warn("oauth 2 authentication not support ensure you have injected client details(client secret and client id)");
+            }
+            /** @type {?} */
+            var formHeaders = addHeaders ? this.appendHeaders(addHeaders) : this.headers;
+            formHeaders = formHeaders.set('Authorization', 'Basic ' + this.getHttpBasicToken());
+            formHeaders = formHeaders.delete("Content-Type");
+            /** @type {?} */
+            var formData = new FormData();
+            formData.append("username", username);
+            formData.append("password", password);
+            formData.append("grant_type", "password");
+            return this.http.post(this.serviceURL(endpoint), formData, { headers: formHeaders }).pipe(operators.catchError(this.handleError())).pipe(operators.tap((/**
+             * @param {?} response
+             * @return {?}
+             */
+            function (response) {
+                if (response["access_token"]) {
+                    _this.setSessionCookie(response["access_token"], response["refresh_token"], response["expires_in"]);
+                }
+            })));
+        };
+        /**
+         * Update authorization token cookie. Also updates Bearer Authorization token
+         *
+         * @param token oauth token
+         * @param refreshToken oauth refresh token
+         * @param expiry token expiry in seconds
+         */
+        /**
+         * Update authorization token cookie. Also updates Bearer Authorization token
+         *
+         * @private
+         * @param {?} token oauth token
+         * @param {?} refreshToken oauth refresh token
+         * @param {?} expiry token expiry in seconds
+         * @return {?}
+         */
+        StewardClientService.prototype.setSessionCookie = /**
+         * Update authorization token cookie. Also updates Bearer Authorization token
+         *
+         * @private
+         * @param {?} token oauth token
+         * @param {?} refreshToken oauth refresh token
+         * @param {?} expiry token expiry in seconds
+         * @return {?}
+         */
+        function (token, refreshToken, expiry) {
+            /** @type {?} */
+            var cookie = ";samesite=strict;path=/";
+            document.cookie = "token=" + token + cookie + ";max-age=" + expiry;
+            document.cookie = "refreshToken=" + refreshToken + cookie + ";max-age=" + expiry + 300;
+            this.headers = this.headers.set("Authorization", "Bearer " + token);
+        };
+        /**
+         * If client details exists, expired token is refreshed.
+         *
+         */
+        /**
+         * If client details exists, expired token is refreshed.
+         *
+         * @private
+         * @return {?}
+         */
+        StewardClientService.prototype.oauthContext = /**
+         * If client details exists, expired token is refreshed.
+         *
+         * @private
+         * @return {?}
+         */
+        function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!this.clientDetails) {
+                                return [2 /*return*/];
+                            }
+                            this.updateAccessToken();
+                            if (!((!this.token) && this.refreshToken)) return [3 /*break*/, 2];
+                            return [4 /*yield*/, this.refreshAccessToken().subscribe((/**
+                                 * @param {?} response
+                                 * @return {?}
+                                 */
+                                function (response) {
+                                    if (!response["access_token"]) {
+                                        console.error("Failed to refresh access token", response);
+                                    }
+                                }))];
+                        case 1:
+                            _a.sent();
+                            return [3 /*break*/, 3];
+                        case 2: return [2 /*return*/];
+                        case 3: return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        /**
+         * Update access token and refresh token from session cookie
+         */
+        /**
+         * Update access token and refresh token from session cookie
+         * @private
+         * @return {?}
+         */
+        StewardClientService.prototype.updateAccessToken = /**
+         * Update access token and refresh token from session cookie
+         * @private
+         * @return {?}
+         */
+        function () {
+            console.debug("Updating session credentials...");
+            /** @type {?} */
+            var inst = this;
+            document.cookie.split(';').forEach((/**
+             * @param {?} item
+             * @return {?}
+             */
+            function (item) {
+                if (item.includes("token=")) {
+                    inst.token = item.split('=')[1];
+                    inst.headers = inst.headers.set("Authorization", "Bearer " + inst.token);
+                }
+                else if (item.includes("refreshToken=")) {
+                    inst.refreshToken = item.split('=')[1];
+                }
+            }));
+        };
+        /**
+         * Refreshes access token
+         *
+         * @param fun callback function after token refresh
+         */
+        /**
+         * Refreshes access token
+         *
+         * @return {?}
+         */
+        StewardClientService.prototype.refreshAccessToken = /**
+         * Refreshes access token
+         *
+         * @return {?}
+         */
+        function () {
+            var _this = this;
+            /** @type {?} */
+            var headers = new http.HttpHeaders({
+                'Authorization': 'Basic '
+                    + this.getHttpBasicToken()
+            });
+            return this.http.post(this.serviceURL(this.oauthTokenEndpoint), {
+                refresh_token: this.refreshAccessToken,
+                grant_type: "refresh_token"
+            }, { headers: headers })
+                .pipe(operators.catchError(this.handleError()))
+                .pipe(operators.tap((/**
+             * @param {?} response
+             * @return {?}
+             */
+            function (response) {
+                if (response["refresh_token"]) {
+                    _this.setSessionCookie(response["access_token"], response["refresh_token"], response["expires_in"]);
+                }
+            })));
+        };
+        /**
+         * Get http basic token
+         */
+        /**
+         * Get http basic token
+         * @private
+         * @return {?}
+         */
+        StewardClientService.prototype.getHttpBasicToken = /**
+         * Get http basic token
+         * @private
+         * @return {?}
+         */
+        function () {
+            return btoa(this.clientDetails.clientId + ":" + this.clientDetails.clientSecret);
+        };
         StewardClientService.decorators = [
             { type: core.Injectable }
         ];
         /** @nocollapse */
         StewardClientService.ctorParameters = function () { return [
             { type: http.HttpClient },
-            { type: StewardConfig }
+            { type: StewardConfig },
+            { type: ClientDetails, decorators: [{ type: core.Optional }] }
         ]; };
         return StewardClientService;
     }());
     if (false) {
         /**
+         * Http request headers
          * @type {?}
          * @private
          */
         StewardClientService.prototype.headers;
-        /** @type {?} */
+        /**
+         * Authorization token
+         * @type {?}
+         * @private
+         */
         StewardClientService.prototype.token;
-        /** @type {?} */
+        /**
+         * Oauth refresh token
+         * @type {?}
+         * @private
+         */
+        StewardClientService.prototype.refreshToken;
+        /**
+         * Base url
+         * @type {?}
+         */
         StewardClientService.prototype.base_url;
+        /**
+         * Token expiry token
+         * @type {?}
+         * @private
+         */
+        StewardClientService.prototype.expiryDate;
+        /**
+         * Oauth token endpoint
+         * @type {?}
+         * @private
+         */
+        StewardClientService.prototype.oauthTokenEndpoint;
         /**
          * @type {?}
          * @private
@@ -789,6 +1062,22 @@
          * @private
          */
         StewardClientService.prototype.config;
+        /**
+         * @type {?}
+         * @private
+         */
+        StewardClientService.prototype.clientDetails;
+    }
+    /**
+     * Authorization token details
+     * @record
+     */
+    function Token() { }
+    if (false) {
+        /** @type {?} */
+        Token.prototype.accessToken;
+        /** @type {?} */
+        Token.prototype.refreshToken;
     }
 
     /**
@@ -1216,7 +1505,7 @@
             this.isLoadingResults = false;
             this.page = new Page();
             this.page.content = [];
-            this.datePipe = new common.DatePipe("en-US");
+            this.datePipe = new common.DatePipe('en-US');
         }
         /**
          * Generate form control from filterComponents and also appending default controls ie. date filter and search controls
@@ -1233,10 +1522,10 @@
             var _this = this;
             //intializing table columns
             if (this.enableCheckbox) {
-                this.displayedColumns.push("checkbox");
+                this.displayedColumns.push('checkbox');
             }
             if (this.showNumberColumn) {
-                this.displayedColumns.push("no");
+                this.displayedColumns.push('no');
             }
             this.columns.forEach((/**
              * @param {?} c
@@ -1246,10 +1535,10 @@
                 _this.displayedColumns.push(c.fieldName);
             }));
             if (this.moreActions) {
-                this.displayedColumns.push("actions");
+                this.displayedColumns.push('actions');
             }
             else {
-                console.debug("moreActions not injected skipping rendering 'More Actions' column");
+                console.debug('moreActions not injected skipping rendering \'More Actions\' column');
             }
             /** @type {?} */
             var group = {};
@@ -1331,16 +1620,16 @@
         };
         /**
          * Used to emit click event of the actions
-         * @param event
+         * @param event Actions data
          */
         /**
          * Used to emit click event of the actions
-         * @param {?} event
+         * @param {?} event Actions data
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.onActionClick = /**
          * Used to emit click event of the actions
-         * @param {?} event
+         * @param {?} event Actions data
          * @return {?}
          */
         function (event) {
@@ -1348,19 +1637,22 @@
         };
         /**
          * Process server request of datable
-         * @param pageInfo
-         * @param filters
+         *
+         * @param pageInfo Page variables
+         * @param filters Filter variables
          */
         /**
          * Process server request of datable
-         * @param {?} pageInfo
-         * @param {?} filters
+         *
+         * @param {?} pageInfo Page variables
+         * @param {?} filters Filter variables
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.loadPage = /**
          * Process server request of datable
-         * @param {?} pageInfo
-         * @param {?} filters
+         *
+         * @param {?} pageInfo Page variables
+         * @param {?} filters Filter variables
          * @return {?}
          */
         function (pageInfo, filters) {
@@ -1384,19 +1676,19 @@
                  * @return {?}
                  */
                 function (value, key) {
-                    if (key != null && key != undefined) { //ignore null values
+                    if (key != null && key !== undefined) { // ignore null values
                         request.set(key, value);
                     }
                 }));
             }
-            request.set("page", pageInfo.offset);
-            request.set("size", pageInfo.limit);
+            request.set('page', pageInfo.offset);
+            request.set('size', pageInfo.limit);
             this.sterwardService.get(this.endpoint, request, this.headers).subscribe((/**
              * @param {?} response
              * @return {?}
              */
             function (response) {
-                if (response.status == 200) {
+                if (response.status === 200) {
                     if (_this.showNumberColumn) {
                         /** @type {?} */
                         var no_1 = 1 + (response.data.number * response.data.size);
@@ -1405,7 +1697,7 @@
                          * @return {?}
                          */
                         function (val) {
-                            val['no'] = no_1++;
+                            val.no = no_1++;
                         }));
                     }
                     _this.page = response.data;
@@ -1416,22 +1708,22 @@
              * @return {?}
              */
             function (error) {
-                console.debug("Server request has failed");
+                console.debug('Server request has failed');
                 _this.isLoadingResults = false;
             }));
         };
         /**
          * Used tolisten to pagination events/actions
-         * @param page
+         * @param page page variables
          */
         /**
          * Used tolisten to pagination events/actions
-         * @param {?} page
+         * @param {?} page page variables
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.pageEvent = /**
          * Used tolisten to pagination events/actions
-         * @param {?} page
+         * @param {?} page page variables
          * @return {?}
          */
         function (page) {
@@ -1439,16 +1731,16 @@
         };
         /**
          * Used to processing table sorting
-         * @param event
+         * @param event Sort variables
          */
         /**
          * Used to processing table sorting
-         * @param {?} event
+         * @param {?} event Sort variables
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.processSorting = /**
          * Used to processing table sorting
-         * @param {?} event
+         * @param {?} event Sort variables
          * @return {?}
          */
         function (event) {
@@ -1470,8 +1762,6 @@
          */
         function () {
             var _this = this;
-            //@ts-ignore
-            // let f: Map<String, any> = new Map(Object.entries(this.filterForm.value));
             /** @type {?} */
             var f = new Map();
             Object.keys(this.filterForm.value).forEach((/**
@@ -1482,7 +1772,7 @@
             function (val, key) {
                 // console.debug("Key is " + key + " and value " + val);
                 if (_this.filterForm.value[val]) {
-                    if (val == 'from' || val == "to") {
+                    if (val === 'from' || val === 'to') {
                         f.set(val, _this.datePipe.transform(_this.filterForm.value[val], 'yyyy-MM-dd'));
                     }
                     else {
@@ -1490,48 +1780,50 @@
                     }
                 }
             }));
-            //add sorting parameters
+            // add sorting parameters
             if (this.sortParams) {
-                f.set("sort", this.sortParams.active + "," + this.sortParams.direction);
+                f.set('sort', this.sortParams.active + ',' + this.sortParams.direction);
             }
             return f;
         };
         /**
          * Used to process table filter. If date filter is not provide the from value is
          * set to 2018-01-01 and to value is set to 1 year from today
-         * @param form
+         *
          * @deprecated
          */
         /**
          * Used to process table filter. If date filter is not provide the from value is
          * set to 2018-01-01 and to value is set to 1 year from today
+         *
          * @deprecated
-         * @param {?} form
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.processFilter = /**
          * Used to process table filter. If date filter is not provide the from value is
          * set to 2018-01-01 and to value is set to 1 year from today
+         *
          * @deprecated
-         * @param {?} form
          * @return {?}
          */
-        function (form) {
-            //@ts-ignore
+        function () {
             this.loadPage({ offset: this.page.number, limit: this.page.size }, this.getFilters());
         };
         /**
-         * Used to check if miliki control is input
-         * @param control
+         * Used to check if additional control is input
+         *
+         * @param control additional control
          */
         /**
-         * Used to check if miliki control is input
-         * @param {?} control
+         * Used to check if additional control is input
+         *
+         * @param {?} control additional control
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.isInput = /**
-         * Used to check if miliki control is input
-         * @param {?} control
+         * Used to check if additional control is input
+         *
+         * @param {?} control additional control
          * @return {?}
          */
         function (control) {
@@ -1539,16 +1831,19 @@
         };
         /**
          * Used to check if miliki control is select
-         * @param control
+         *
+         * @param control Select control
          */
         /**
          * Used to check if miliki control is select
-         * @param {?} control
+         *
+         * @param {?} control Select control
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.isSelect = /**
          * Used to check if miliki control is select
-         * @param {?} control
+         *
+         * @param {?} control Select control
          * @return {?}
          */
         function (control) {
@@ -1572,16 +1867,16 @@
         };
         /**
          * Used to format date to string yyyy-MM-dd
-         * @param date
+         * @param date Date variable
          */
         /**
          * Used to format date to string yyyy-MM-dd
-         * @param {?} date
+         * @param {?} date Date variable
          * @return {?}
          */
         TgrMaterialTableComponent.prototype.getFormattedDate = /**
          * Used to format date to string yyyy-MM-dd
-         * @param {?} date
+         * @param {?} date Date variable
          * @return {?}
          */
         function (date) {
@@ -1610,7 +1905,7 @@
                 return column.callback(data);
             }
             /** @type {?} */
-            var k = column.fieldName.split(".");
+            var k = column.fieldName.split('.');
             /** @type {?} */
             var value = this.sterwardService.getObjectValue(data, k);
             return column.isDateColumn ? this.datePipe.transform(value, 'medium') : value;
@@ -1627,14 +1922,13 @@
          * @return {?}
          */
         function () {
-            console.debug("Refreshed data tables");
-            //@ts-ignore
+            console.debug('Refreshed data tables');
             this.loadPage({ offset: this.page.number, limit: this.page.size }, this.getFilters());
         };
         TgrMaterialTableComponent.decorators = [
             { type: core.Component, args: [{
                         selector: 'tgr-material-table',
-                        template: "<div class=\"row\"  *ngIf=\"showDefaultFilters || filterComponents.length > 0\">\n  <div class=\"col-md-12\">\n    <div class=\"card card-outline-default mat-elevation-z4\">\n      <div class=\"card-body\">\n        <div class=\"row\">\n          <div class=\"col-md-12\">\n            <div class=\"mat-table-filter\">\n                <button title=\"Refresh\" (click) = \"refreshTable()\" mat-icon-button color=\"basic\" type=\"reset\"><mat-icon>refresh</mat-icon></button>\n            </div>\n          </div>\n        </div>\n        <form (ngSubmit)=\"processFilter(filterForm)\" [formGroup]=\"filterForm\">\n          <div class=\"row\">\n            <div class=\"col-md-3  mb-3\" *ngFor=\"let control of filterComponents\">\n              <!-- Intialize form select control -->\n              <mat-form-field class=\"col-md-12\" *ngIf=\"isSelect(control.controlType)\">\n                <mat-select [placeholder]=\"control.placeholder\" [formControlName]=\"control.name\">\n                  <mat-option *ngFor=\"let o of control.controlType.options\" [value]=\"o.value\">\n                    {{o.text}}\n                  </mat-option>\n                </mat-select>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('required')\">{{control.placeholder}}\n                  is required</mat-error>\n              </mat-form-field>\n\n              <!-- Intialize form textarea control -->\n              <mat-form-field class=\"col-md-12\" *ngIf=\"isTextArea(control.controlType)\">\n                <textarea matInput [formControlName]=\"control.name\" [placeholder]=\"control.label\" [cols]=\"control.controlType.cols\"\n                  [rows]=\"control.controlType.rows\"></textarea>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('required')\">{{control.placeholder}}\n                  is required</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('minlength')\">Minimum of\n                  {{control.controlType.minLength}} characters</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('maxlength')\">Maximum of\n                  {{control.controlType.maxLength}} characters</mat-error>\n              </mat-form-field>\n\n              <!-- Intialize form input control -->\n              <mat-form-field class=\"col-md-12\" *ngIf=\"isInput(control.controlType)\">\n                <!-- <mat-icon matPrefix class=\"material-icons icon-margin-right\">perm_identity</mat-icon> -->\n                <input matInput [placeholder]=\"control.label\" [type]=\"control.controlType.type\" [formControlName]=\"control.name\" />\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('required')\">{{control.placeholder}}\n                  is required</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('minlength')\">Minimum of\n                  {{control.controlType.minLength}} characters</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('maxlength')\">Maximum of\n                  {{control.controlType.maxLength}} characters</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('min')\">Should be greater than\n                  {{control.controlType.min}}</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('max')\">Should be less than\n                  {{control.controlType.max}}</mat-error>\n              </mat-form-field>\n            </div>\n            <div class=\"col-md-3 mb-3\" *ngIf=\"showDefaultFilters\">\n              <!-- <mat-icon matPrefix class=\"material-icons col-md-3\">date_range</mat-icon> -->\n              <mat-form-field class=\"col-md-12\">\n                <input matInput placeholder=\"From\" type=\"date\" [matDatepicker]=\"picker\" formControlName=\"from\" />\n                <mat-datepicker-toggle matSuffix [for]=\"picker\"></mat-datepicker-toggle>\n                <mat-datepicker #picker></mat-datepicker>\n              </mat-form-field>\n            </div>\n            <div class=\"col-md-3 mb-3\" *ngIf=\"showDefaultFilters\">\n              <mat-form-field class=\"col-md-12\">\n                <!-- <mat-icon>home</mat-icon> -->\n                <input matInput placeholder=\"To\" type=\"date\" [matDatepicker]=\"toPicker\" formControlName=\"to\" />\n                <mat-datepicker-toggle matSuffix [for]=\"toPicker\"></mat-datepicker-toggle>\n                <mat-datepicker #toPicker></mat-datepicker>\n              </mat-form-field>\n            </div>\n            <div class=\"col-md-3 mb-3\" *ngIf=\"showDefaultFilters\">\n              <mat-form-field class=\"col-md-12\">\n                <input matInput maxlength=\"100\" placeholder=\"Search\" type=\"text\" formControlName=\"needle\" />\n              </mat-form-field>\n            </div>\n            <span class=\"help-block\" *ngIf=\"filterForm.get('from').touched\">\n              <span class=\"text-danger\" *ngIf=\"filterForm.get('from').hasError('maxlength')\">Maximum of 200 characters</span>\n            </span>\n          </div>\n          <div class=\"row\">\n            <div class=\"col-md-12\">\n              <div class=\"pull-right mat-table-filter\">\n                <button mat-raised-button color=\"primary\" type=\"submit\" [disabled]=\"filterForm.invalid\">Filter</button>\n                <button mat-raised-button color=\"basic\" type=\"reset\">Reset</button>\n              </div>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>\n<div class=\"row\">\n  <div class=\"col-md-12\">\n      <div class=\"mat-table-loading-shade\" *ngIf=\"isLoadingResults\">\n        <mat-spinner *ngIf=\"isLoadingResults\"></mat-spinner>\n      </div>\n    <table mat-table [dataSource]=\"page.content\" class=\"mat-elevation-z8\" style=\"width: 100%\" matSort (matSortChange)=\"processSorting($event)\">\n\n      <!--- Note that these columns can be defined in any order.\n          The actual rendered columns are set as a property on the row definition\" -->\n\n      <!-- Position Column -->\n      <ng-container matColumnDef=\"checkbox\" *ngIf=\"enableCheckbox\">\n        <th mat-header-cell *matHeaderCellDef>\n          <mat-checkbox (change)=\"$event ? masterToggle() : null\" [checked]=\"selection.hasValue() && isAllSelected()\"\n            [indeterminate]=\"selection.hasValue() && !isAllSelected()\">\n          </mat-checkbox>\n        </th>\n        <!-- <td mat-cell *matCellDef=\"let element\"> <mat-checkbox></mat-checkbox> </td> -->\n        <td mat-cell *matCellDef=\"let row\">\n          <mat-checkbox (click)=\"$event.stopPropagation()\" (change)=\"$event ? selection.toggle(row) : null\" [checked]=\"selection.isSelected(row)\">\n          </mat-checkbox>\n        </td>\n      </ng-container>\n\n      <!-- Number Column -->\n      <ng-container matColumnDef=\"no\" *ngIf=\"showNumberColumn\">\n        <th mat-header-cell *matHeaderCellDef mat-sort-header> No. </th>\n        <td mat-cell *matCellDef=\"let element\" > \n           <div>{{element['no']}}</div>\n          </td>\n      </ng-container>\n\n      <!-- Fields Columns -->\n      <ng-container [matColumnDef]=\"c.fieldName\" *ngFor=\"let c of columns\">\n        <th mat-header-cell *matHeaderCellDef mat-sort-header [class.hide_on_xs]=\"c.hideOnXs\"> {{c.columnName}} </th>\n        <td mat-cell *matCellDef=\"let element\" [class.hide_on_xs]=\"c.hideOnXs\"> \n          <!-- {{c.isDateColumn ?\n          (getFieldValue(element, c) | date:'medium') :\n          getFieldValue(element, c)}} -->\n           <div [innerHtml] = \"getFieldValue(element, c)\"></div></td>\n      </ng-container>\n\n      <!-- Other Column -->\n      <ng-container matColumnDef=\"actions\" *ngIf=\"moreActions\">\n        <th mat-header-cell *matHeaderCellDef> {{moreActions.name}} </th>\n        <td mat-cell *matCellDef=\"let element\">\n          <button mat-icon-button [matMenuTriggerFor]=\"menu\">\n            <mat-icon>list</mat-icon>\n          </button>\n          <mat-menu #menu=\"matMenu\">\n            <button mat-menu-item *ngFor=\"let action of moreActions.actions\" (click)=\"onActionClick({id: element[moreActions.idFieldName], actionName: action.actionName})\">{{action.actionName}}</button>\n          </mat-menu>\n        </td>\n      </ng-container>\n      <tr mat-header-row *matHeaderRowDef=\"displayedColumns\"></tr>\n      <tr mat-row *matRowDef=\"let row; columns: displayedColumns;\"></tr>\n    </table>\n    <mat-paginator (page)=\"pageEvent($event)\" showFirstLastButtons [length]=\"page.totalElements\" [pageSize]=\"20\" [pageSizeOptions]=\"[1, 5, 10, 20, 50, 100, 200]\">\n    </mat-paginator>\n  </div>\n</div>",
+                        template: "<div class=\"row\"  *ngIf=\"showDefaultFilters || filterComponents.length > 0\">\n  <div class=\"col-md-12\">\n    <div class=\"card card-outline-default mat-elevation-z4\">\n      <div class=\"card-body\">\n        <div class=\"row\">\n          <div class=\"col-md-12\">\n            <div class=\"mat-table-filter\">\n                <button title=\"Refresh\" (click) = \"refreshTable()\" mat-icon-button color=\"basic\" type=\"reset\"><mat-icon>refresh</mat-icon></button>\n            </div>\n          </div>\n        </div>\n        <form (ngSubmit)=\"processFilter()\" [formGroup]=\"filterForm\">\n          <div class=\"row\">\n            <div class=\"col-md-3  mb-3\" *ngFor=\"let control of filterComponents\">\n              <!-- Intialize form select control -->\n              <mat-form-field class=\"col-md-12\" *ngIf=\"isSelect(control.controlType)\">\n                <mat-select [placeholder]=\"control.placeholder\" [formControlName]=\"control.name\">\n                  <mat-option *ngFor=\"let o of control.controlType.options\" [value]=\"o.value\">\n                    {{o.text}}\n                  </mat-option>\n                </mat-select>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('required')\">{{control.placeholder}}\n                  is required</mat-error>\n              </mat-form-field>\n\n              <!-- Intialize form textarea control -->\n              <mat-form-field class=\"col-md-12\" *ngIf=\"isTextArea(control.controlType)\">\n                <textarea matInput [formControlName]=\"control.name\" [placeholder]=\"control.label\" [cols]=\"control.controlType.cols\"\n                  [rows]=\"control.controlType.rows\"></textarea>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('required')\">{{control.placeholder}}\n                  is required</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('minlength')\">Minimum of\n                  {{control.controlType.minLength}} characters</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('maxlength')\">Maximum of\n                  {{control.controlType.maxLength}} characters</mat-error>\n              </mat-form-field>\n\n              <!-- Intialize form input control -->\n              <mat-form-field class=\"col-md-12\" *ngIf=\"isInput(control.controlType)\">\n                <!-- <mat-icon matPrefix class=\"material-icons icon-margin-right\">perm_identity</mat-icon> -->\n                <input matInput [placeholder]=\"control.label\" [type]=\"control.controlType.type\" [formControlName]=\"control.name\" />\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('required')\">{{control.placeholder}}\n                  is required</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('minlength')\">Minimum of\n                  {{control.controlType.minLength}} characters</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('maxlength')\">Maximum of\n                  {{control.controlType.maxLength}} characters</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('min')\">Should be greater than\n                  {{control.controlType.min}}</mat-error>\n                <mat-error *ngIf=\"filterForm.get(control.name).hasError('max')\">Should be less than\n                  {{control.controlType.max}}</mat-error>\n              </mat-form-field>\n            </div>\n            <div class=\"col-md-3 mb-3\" *ngIf=\"showDefaultFilters\">\n              <!-- <mat-icon matPrefix class=\"material-icons col-md-3\">date_range</mat-icon> -->\n              <mat-form-field class=\"col-md-12\">\n                <input matInput placeholder=\"From\" type=\"date\" [matDatepicker]=\"picker\" formControlName=\"from\" />\n                <mat-datepicker-toggle matSuffix [for]=\"picker\"></mat-datepicker-toggle>\n                <mat-datepicker #picker></mat-datepicker>\n              </mat-form-field>\n            </div>\n            <div class=\"col-md-3 mb-3\" *ngIf=\"showDefaultFilters\">\n              <mat-form-field class=\"col-md-12\">\n                <!-- <mat-icon>home</mat-icon> -->\n                <input matInput placeholder=\"To\" type=\"date\" [matDatepicker]=\"toPicker\" formControlName=\"to\" />\n                <mat-datepicker-toggle matSuffix [for]=\"toPicker\"></mat-datepicker-toggle>\n                <mat-datepicker #toPicker></mat-datepicker>\n              </mat-form-field>\n            </div>\n            <div class=\"col-md-3 mb-3\" *ngIf=\"showDefaultFilters\">\n              <mat-form-field class=\"col-md-12\">\n                <input matInput maxlength=\"100\" placeholder=\"Search\" type=\"text\" formControlName=\"needle\" />\n              </mat-form-field>\n            </div>\n            <span class=\"help-block\" *ngIf=\"filterForm.get('from').touched\">\n              <span class=\"text-danger\" *ngIf=\"filterForm.get('from').hasError('maxlength')\">Maximum of 200 characters</span>\n            </span>\n          </div>\n          <div class=\"row\">\n            <div class=\"col-md-12\">\n              <div class=\"pull-right mat-table-filter\">\n                <button mat-raised-button color=\"primary\" type=\"submit\" [disabled]=\"filterForm.invalid\">Filter</button>\n                <button mat-raised-button color=\"basic\" type=\"reset\">Reset</button>\n              </div>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>\n<div class=\"row\">\n  <div class=\"col-md-12\">\n      <div class=\"mat-table-loading-shade\" *ngIf=\"isLoadingResults\">\n        <mat-spinner *ngIf=\"isLoadingResults\"></mat-spinner>\n      </div>\n    <table mat-table [dataSource]=\"page.content\" class=\"mat-elevation-z8\" style=\"width: 100%\" matSort (matSortChange)=\"processSorting($event)\">\n\n      <!--- Note that these columns can be defined in any order.\n          The actual rendered columns are set as a property on the row definition\" -->\n\n      <!-- Position Column -->\n      <ng-container matColumnDef=\"checkbox\" *ngIf=\"enableCheckbox\">\n        <th mat-header-cell *matHeaderCellDef>\n          <mat-checkbox (change)=\"$event ? masterToggle() : null\" [checked]=\"selection.hasValue() && isAllSelected()\"\n            [indeterminate]=\"selection.hasValue() && !isAllSelected()\">\n          </mat-checkbox>\n        </th>\n        <td mat-cell *matCellDef=\"let row\">\n          <mat-checkbox (click)=\"$event.stopPropagation()\" (change)=\"$event ? selection.toggle(row) : null\" [checked]=\"selection.isSelected(row)\">\n          </mat-checkbox>\n        </td>\n      </ng-container>\n\n      <!-- Number Column -->\n      <ng-container matColumnDef=\"no\" *ngIf=\"showNumberColumn\">\n        <th mat-header-cell *matHeaderCellDef mat-sort-header> No. </th>\n        <td mat-cell *matCellDef=\"let element\" > \n           <div>{{element['no']}}</div>\n          </td>\n      </ng-container>\n\n      <!-- Fields Columns -->\n      <ng-container [matColumnDef]=\"c.fieldName\" *ngFor=\"let c of columns\">\n        <th mat-header-cell *matHeaderCellDef mat-sort-header [class.hide_on_xs]=\"c.hideOnXs\"> {{c.columnName}} </th>\n        <td mat-cell *matCellDef=\"let element\" [class.hide_on_xs]=\"c.hideOnXs\"> \n           <div [innerHtml] = \"getFieldValue(element, c)\"></div></td>\n      </ng-container>\n\n      <!-- Other Column -->\n      <ng-container matColumnDef=\"actions\" *ngIf=\"moreActions\">\n        <th mat-header-cell *matHeaderCellDef> {{moreActions.name}} </th>\n        <td mat-cell *matCellDef=\"let element\">\n          <button mat-icon-button [matMenuTriggerFor]=\"menu\">\n            <mat-icon>list</mat-icon>\n          </button>\n          <mat-menu #menu=\"matMenu\">\n            <button mat-menu-item *ngFor=\"let action of moreActions.actions\" (click)=\"onActionClick({data: element, id: element[moreActions.idFieldName], actionName: action.actionName})\">{{action.actionName}}</button>\n          </mat-menu>\n        </td>\n      </ng-container>\n      <tr mat-header-row *matHeaderRowDef=\"displayedColumns\"></tr>\n      <tr mat-row *matRowDef=\"let row; columns: displayedColumns;\"></tr>\n    </table>\n    <mat-paginator (page)=\"pageEvent($event)\" showFirstLastButtons [length]=\"page.totalElements\" [pageSize]=\"20\" [pageSizeOptions]=\"[1, 5, 10, 20, 50, 100, 200]\">\n    </mat-paginator>\n  </div>\n</div>",
                         providers: [
                             { provide: core$1.DateAdapter, useClass: AppDateAdapter },
                             {
@@ -1778,18 +2072,26 @@
      * Used to display more actions column and the end of the table
      */
     TgrMoreActions = /** @class */ (function () {
-        function TgrMoreActions(actions, id, name) {
+        /**
+         * @param actions Rows action data
+         * @param id Id field name currently deprecated
+         * @param name Actions column name
+         * @param callback Rows callback function for data sanitization
+         */
+        function TgrMoreActions(actions, id, name, callback) {
             /**
              * Action Column name e.g. More Actions
              */
-            this.name = "Actions";
+            this.name = 'Actions';
             /**
              * Field name id from the server response e.g userId
+             * @deprecated
              */
-            this.idFieldName = "id";
+            this.idFieldName = 'id';
             this.actions = actions;
             this.name = name;
             this.idFieldName = id;
+            this.callback = callback;
         }
         return TgrMoreActions;
     }());
@@ -1801,6 +2103,7 @@
         TgrMoreActions.prototype.name;
         /**
          * Field name id from the server response e.g userId
+         * @deprecated
          * @type {?}
          */
         TgrMoreActions.prototype.idFieldName;
@@ -1809,6 +2112,11 @@
          * @type {?}
          */
         TgrMoreActions.prototype.actions;
+        /**
+         * Callback function
+         * @type {?}
+         */
+        TgrMoreActions.prototype.callback;
     }
     /**
      * @record
@@ -1817,6 +2125,7 @@
     if (false) {
         /**
          * Never mind this field it will be used by the library
+         * @deprecated
          * @type {?|undefined}
          */
         TgrMoreActionData.prototype.id;
@@ -1825,6 +2134,11 @@
          * @type {?}
          */
         TgrMoreActionData.prototype.actionName;
+        /**
+         *
+         * @type {?|undefined}
+         */
+        TgrMoreActionData.prototype.data;
     }
 
     /**
@@ -1837,16 +2151,18 @@
         }
         /**
          * @param {?} config
+         * @param {?=} clientDetails
          * @return {?}
          */
         StewardClientModule.forRoot = /**
          * @param {?} config
+         * @param {?=} clientDetails
          * @return {?}
          */
-        function (config) {
+        function (config, clientDetails) {
             return {
                 ngModule: StewardClientModule,
-                providers: [{ provide: StewardConfig, useValue: config }]
+                providers: [{ provide: StewardConfig, useValue: config }, { provide: ClientDetails, useValue: clientDetails }]
             };
         };
         StewardClientModule.decorators = [
@@ -1882,6 +2198,7 @@
 
     exports.APP_DATE_FORMATS = APP_DATE_FORMATS;
     exports.AppDateAdapter = AppDateAdapter;
+    exports.ClientDetails = ClientDetails;
     exports.Page = Page;
     exports.ResponseWrapper = ResponseWrapper;
     exports.Sort = Sort;

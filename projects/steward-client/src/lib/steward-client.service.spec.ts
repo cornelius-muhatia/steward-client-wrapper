@@ -6,7 +6,11 @@ describe('StewardClientService', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
 
   it('should be created', () => {
-    const service: StewardClientService = TestBed.get(StewardClientService);
+    const service: StewardClientService<any, any> = TestBed.get(StewardClientService);
     expect(service).toBeTruthy();
   });
+
+  it('Authentication', () => {
+    fail("Authentication tests still being implemented")
+  })
 });

@@ -3,7 +3,7 @@ import { StewardClientComponent } from './steward-client.component';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-import { StewardConfig } from './steward-client.service';
+import { StewardConfig, ClientDetails } from './steward-client.service';
 import { TgrMaterialTableComponent } from './tgr-material-table/tgr-material-table.component';
 import {
   MatInputModule,
@@ -48,10 +48,10 @@ import {
   exports: [StewardClientComponent, TgrMaterialTableComponent,]
 })
 export class StewardClientModule {
-  static forRoot(config: StewardConfig) {
+  static forRoot(config: StewardConfig, clientDetails?: ClientDetails) {
     return {
       ngModule: StewardClientModule,
-      providers: [ {provide: StewardConfig, useValue: config} ]
+      providers: [ {provide: StewardConfig, useValue: config}, {provide: ClientDetails, useValue: clientDetails} ]
     }
   }
 }

@@ -6,13 +6,49 @@ export declare class StewardConfig {
     access_token?: string;
     headers?: HttpHeaders;
 }
+/**
+ * Oauth2 client details
+ */
+export declare class ClientDetails {
+    clientSecret: string;
+    clientId: String;
+}
 export declare class StewardClientService<T, E> {
     private http;
     private config;
+    private clientDetails?;
+    /**
+     * Http request headers
+     */
     private headers;
-    token: string;
+    /**
+     * Authorization token
+     */
+    private token;
+    /**
+     * Oauth refresh token
+     */
+    private refreshToken;
+    /**
+     * Base url
+     */
     base_url: string;
-    constructor(http: HttpClient, config: StewardConfig);
+    /**
+     * Token expiry token
+     */
+    private expiryDate;
+    /**
+     * Oauth token endpoint
+     */
+    private oauthTokenEndpoint;
+    /**
+     * Constructor
+     *
+     * @param http http client service
+     * @param config base url, access token and request headers
+     * @param clientDetails Oauth2 client details
+     */
+    constructor(http: HttpClient, config: StewardConfig, clientDetails?: ClientDetails);
     /**
      *  Used to update authorization token. Currently supports bearer token
      *
@@ -113,4 +149,46 @@ export declare class StewardClientService<T, E> {
      * @returns merged headers
      */
     appendHeaders(entries: Map<String, string | string[]>): HttpHeaders;
+    /**
+     * Handles oauth authentication with password grant
+     *
+     * @param username user's username
+     * @param password user's password
+     * @param addHeaders additional headers to be appended to existing headers
+     */
+    authenticate(endpoint: string, username: string, password: string, addHeaders?: Map<string, string | string[]>): Observable<ResponseWrapper<E>>;
+    /**
+     * Update authorization token cookie. Also updates Bearer Authorization token
+     *
+     * @param token oauth token
+     * @param refreshToken oauth refresh token
+     * @param expiry token expiry in seconds
+     */
+    private setSessionCookie;
+    /**
+     * If client details exists, expired token is refreshed.
+     *
+     */
+    private oauthContext;
+    /**
+     * Update access token and refresh token from session cookie
+     */
+    private updateAccessToken;
+    /**
+     * Refreshes access token
+     *
+     * @param fun callback function after token refresh
+     */
+    refreshAccessToken(): Observable<ResponseWrapper<E>>;
+    /**
+     * Get http basic token
+     */
+    private getHttpBasicToken;
+}
+/**
+ * Authorization token details
+ */
+export interface Token {
+    accessToken: String;
+    refreshToken: String;
 }
